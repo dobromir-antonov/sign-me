@@ -7,9 +7,9 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 
-const RESEND  = Deno.env.get('RESEND_API_KEY')!;
+const BREVO  = Deno.env.get('BREVO_API_KEY')!;
 const SITE    = Deno.env.get('SITE_URL')!;
-const FROM    = Deno.env.get('FROM_EMAIL') ?? 'noreply@resend.dev';
+const FROM    = Deno.env.get('FROM_EMAIL') ?? 'noreply@brevo.dev';
 const SB_URL  = Deno.env.get('SUPABASE_URL')!;
 const SB_SVC  = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
@@ -108,18 +108,21 @@ serve(async (req) => {
 </table></td></tr></table>
 </body></html>`;
 
-    const r = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: { 'Authorization':`Bearer ${RESEND}`, 'Content-Type':'application/json' },
-      body: JSON.stringify({
-        from: FROM,
-        to:   head.email,
-        subject: `✓ Записване — ${event} (${total} уч.)`,
-        html,
-      }),
-    });
+    const r = await fetch('https://api.brevo.com/v3/smtp/email', {
+	  method: 'POST',
+	  headers: {
+		'api-key': BREVO,
+		'Content-Type': 'application/json',
+	  },
+	  body: JSON.stringify({
+		sender:  { email: FROM },          // your verified Gmail
+		to:      [{ email: head.email }],
+		subject: `Записване — ${event} (${total} уч.)`,
+		htmlContent: html,
+	  }),
+	});
 
-    if (!r.ok) { console.error('Resend:', await r.text()); return new Response('email error',{status:500}); }
+    if (!r.ok) { console.error('Brevo:', await r.text()); return new Response('email error',{status:500}); }
     console.log(`Email → ${head.email} | reg ${id}`);
     return new Response(JSON.stringify({ok:true}),{headers:{'Content-Type':'application/json'}});
 
