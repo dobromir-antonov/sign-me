@@ -22,7 +22,7 @@ serve(async (req) => {
 
     // Вземи всички участници (is_head=true е организаторът)
     const pRes = await fetch(
-      `${SB_URL}/rest/v1/participants?head_id=eq.${id}&order=is_head.desc,name.asc`,
+      `${SB_URL}/rest/v1/participants?registration_id=eq.${id}&order=is_head.desc,name.asc`,
       { headers: { 'apikey': SB_SVC, 'Authorization': `Bearer ${SB_SVC}` } }
     );
     const parts: any[] = await pRes.json();
