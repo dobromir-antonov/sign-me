@@ -3,32 +3,35 @@
 -- ═══════════════════════════════════════════════════════════════════
 
 -- ── 1. Header (събитие + мета) ────────────────────────────────────
-CREATE TABLE registrations (
-  id             uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-  created_at     timestamptz DEFAULT now(),
-  event          text NOT NULL,
-  event_date     date NOT NULL,
-  notes          text,
-  decl_insurance boolean DEFAULT false,
-  decl_terms     boolean DEFAULT false,
-  status         text DEFAULT 'pending',      -- pending / confirmed / cancelled
-  edit_token     uuid DEFAULT gen_random_uuid() UNIQUE
-);
+create table public.registrations (
+  id uuid not null default gen_random_uuid (),
+  created_at timestamp with time zone null default now(),
+  event text not null,
+  event_date date not null,
+  notes text null,
+  status text null default 'pending'::text,
+  edit_token uuid null default gen_random_uuid (),
+  constraint registrations_pkey primary key (id),
+  constraint registrations_edit_token_key unique (edit_token)
+) TABLESPACE pg_default;
 
 -- ── 2. Всички участници (включително организаторът) ───────────────
-CREATE TABLE participants (
-  id           uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-  head_id      uuid NOT NULL REFERENCES registrations(id) ON DELETE CASCADE,
-  is_head      boolean DEFAULT false,   -- true = организатор
-  name         text NOT NULL,
-  egn          text NOT NULL,
-  birth_date   date,                    -- auto от ЕГН
-  age          int,                     -- auto към event_date
-  phone        text,                    -- задължително само за организатора
-  email        text                     -- задължително само за организатора
-);
+create table public.participants (
+  id uuid not null default gen_random_uuid (),
+  registration_id uuid not null,
+  is_head boolean null default false,
+  name text not null,
+  egn text not null,
+  birth_date date null,
+  age integer null,
+  phone text null,
+  email text null,
+  constraint participants_pkey primary key (id),
+  constraint participants_registration_id_fkey foreign KEY (registration_id) references registrations (id) on delete CASCADE
+) TABLESPACE pg_default;
 
-CREATE INDEX idx_participants_head ON participants(head_id);
+create index IF not exists idx_participants_head on public.participants using btree (registration_id) TABLESPACE pg_default;
+
 
 -- ── 3. Row Level Security ─────────────────────────────────────────
 ALTER TABLE registrations ENABLE ROW LEVEL SECURITY;
@@ -40,8 +43,10 @@ CREATE POLICY "anon_insert_reg" ON registrations
 CREATE POLICY "anon_select_reg" ON registrations
   FOR SELECT TO anon USING (true);
 
-CREATE POLICY "anon_update_reg" ON registrations
-  FOR UPDATE TO anon USING (event_date >= CURRENT_DATE);
+CREATE POLICY "anon_update_reg" ON public.registrations
+FOR UPDATE TO anon
+USING (event_date >= CURRENT_DATE)
+WITH CHECK (true);
 
 CREATE POLICY "anon_insert_par" ON participants
   FOR INSERT TO anon WITH CHECK (true);

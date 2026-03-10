@@ -1,28 +1,28 @@
-# signMe — Group Event Registration System
+# signMe — Group Hiking Registration
 
-A lightweight, serverless group registration system for Bulgarian hiking/mountain trekking events. Participants fill out a single-page form, receive an email confirmation, and can edit their registration via a secure link until the event date.
+A serverless, no-build group registration system for Bulgarian mountain trekking events. An organizer fills out one form for the whole group, gets an email confirmation with a secure edit link, and can update or confirm the registration any time before the event.
 
 ---
 
 ## Features
 
-- **Group registration** — one organizer + up to 14 participants per group
-- **Bulgarian EGN support** — auto-calculates age from personal ID numbers
-- **Edit mode** — secure token-based link lets organizers update their registration
-- **Email confirmation** — automated HTML email sent on successful submission
-- **No build step** — pure HTML/CSS/JS frontend, no npm required
-- **Serverless backend** — Supabase Edge Function handles email delivery
+- **Group registration** — organizer + up to 14 additional participants
+- **Bulgarian EGN support** — auto-calculates age from personal ID numbers at event date
+- **Edit mode** — token-based URL lets organizers update or confirm their registration
+- **Email confirmation** — styled HTML email sent automatically on new submission (via Supabase trigger → Edge Function → Resend)
+- **Declarations** — two mandatory checkboxes validated on submit; not persisted in the database
+- **No build step** — single HTML file, no npm required
 
 ---
 
 ## Tech Stack
 
-| Layer    | Technology                          |
-|----------|-------------------------------------|
-| Frontend | HTML5 + Vanilla JavaScript + CSS3   |
-| Database | PostgreSQL via Supabase             |
-| Backend  | Deno · Supabase Edge Functions      |
-| Email    | Resend API                          |
+| Layer    | Technology                                   |
+|----------|----------------------------------------------|
+| Frontend | HTML5 · Vanilla JS · CSS3                    |
+| Database | PostgreSQL via Supabase                      |
+| Backend  | Deno · Supabase Edge Functions               |
+| Email    | Resend API                                   |
 | Hosting  | Any static host (Netlify, GitHub Pages, etc.) |
 
 ---
@@ -41,27 +41,41 @@ signMe/
 ## Database Schema
 
 ### `registrations`
-| Column          | Type    | Description                              |
-|-----------------|---------|------------------------------------------|
-| id              | UUID    | Primary key                              |
-| event           | text    | Event name                               |
-| event_date      | date    | Event date (used for edit link expiry)   |
-| status          | text    | `pending` / `confirmed` / `cancelled`   |
-| edit_token      | UUID    | Secure token for edit links              |
-| notes           | text    | Optional notes                           |
+
+| Column       | Type        | Notes                                   |
+|--------------|-------------|-----------------------------------------|
+| `id`         | uuid (PK)   | Auto-generated                          |
+| `created_at` | timestamptz | Auto-set on insert                      |
+| `event`      | text        | Event name                              |
+| `event_date` | date        | Used for edit-link expiry and age calc  |
+| `status`     | text        | `pending` (default) · `confirmed` · `cancelled` |
+| `edit_token` | uuid        | Unique token for edit links             |
+| `notes`      | text        | Optional                                |
 
 ### `participants`
-| Column     | Type    | Description                              |
-|------------|---------|------------------------------------------|
-| id         | UUID    | Primary key                              |
-| head_id    | UUID    | FK → registrations (CASCADE delete)      |
-| is_head    | boolean | `true` = organizer                       |
-| name       | text    | Full name (3 names)                      |
-| egn        | text    | Bulgarian EGN (10-digit personal ID)     |
-| birth_date | date    | Extracted from EGN                       |
-| age        | integer | Calculated (birth_date → event_date)     |
-| phone      | text    | Organizer only                           |
-| email      | text    | Organizer only                           |
+
+| Column            | Type        | Notes                                              |
+|-------------------|-------------|----------------------------------------------------|
+| `id`              | uuid (PK)   | Auto-generated                                     |
+| `registration_id` | uuid (FK)   | → `registrations.id` · CASCADE delete             |
+| `is_head`         | boolean     | `true` = organizer                                 |
+| `name`            | text        | Full name (three names)                            |
+| `egn`             | text        | 10-digit Bulgarian personal ID                     |
+| `birth_date`      | date        | Extracted from EGN                                 |
+| `age`             | integer     | Calculated: birth_date → event_date                |
+| `phone`           | text        | Organizer only                                     |
+| `email`           | text        | Organizer only                                     |
+
+### Row-Level Security (anon role)
+
+| Table           | INSERT | SELECT | UPDATE                          | DELETE |
+|-----------------|--------|--------|---------------------------------|--------|
+| `registrations` | ✓      | ✓      | ✓ (only while `event_date` ≥ today) | —      |
+| `participants`  | ✓      | ✓      | —                               | ✓      |
+
+### `export_view`
+
+A read-only view joining `registrations` and `participants` (non-cancelled) — intended for insurance export.
 
 ---
 
@@ -69,11 +83,11 @@ signMe/
 
 ### 1. Database
 
-Run `supabase_setup.sql` in **Supabase → SQL Editor**. This creates the tables, RLS policies, and the `export_view` view.
+Run `supabase_setup.sql` in **Supabase → SQL Editor → New query → Run**.
 
 ### 2. Edge Function
 
-Deploy the email function:
+The function must be deployed into your Supabase project and wired to a database webhook on `INSERT` into `registrations`.
 
 ```bash
 supabase functions deploy send-confirmation
@@ -85,53 +99,56 @@ Set the required secrets:
 supabase secrets set RESEND_API_KEY=re_xxxx
 supabase secrets set SITE_URL=https://your-domain.netlify.app
 supabase secrets set FROM_EMAIL=noreply@yourdomain.com
-supabase secrets set SUPABASE_URL=https://xxxx.supabase.co
-supabase secrets set SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 ```
 
-### 3. Frontend Configuration
+`SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are injected automatically by Supabase.
 
-Edit the constants at the top of `registration.html`:
+### 3. Frontend
+
+Edit the four constants at the top of the `<script>` block in `registration.html`:
 
 ```javascript
-const SB_URL  = 'https://your-project.supabase.co';   // Supabase project URL
-const SB_KEY  = 'your_anon_public_key';               // Supabase anon key
-const EV_NAME = 'Пролетен поход — Рила';              // Event name
-const EV_DATE = '2026-04-20';                         // Event date (YYYY-MM-DD)
+const SB_URL  = 'https://your-project.supabase.co';  // Supabase project URL
+const SB_KEY  = 'your_anon_public_key';              // Supabase anon/publishable key
+const EV_NAME = 'Пролетен поход — Рила';             // Event name (change per event)
+const EV_DATE = '2026-04-20';                        // Event date YYYY-MM-DD
 ```
 
 ### 4. Deploy Frontend
 
-Host `registration.html` on any static file server — Netlify, GitHub Pages, Vercel, or a plain web server. No build step required.
+Serve `registration.html` from any static host. No build step required.
 
 ---
 
 ## How It Works
 
 ```
-1. User fills out the registration form
-2. Form validates names, EGNs, email, and required checkboxes
-3. Registration + participants are saved to Supabase
-4. Supabase trigger fires → Edge Function executes
-5. Confirmation email is sent to the organizer with:
-   - Participant list (name, EGN, age)
-   - Secure edit link (valid until event date)
-   - Registration reference ID
-6. Organizer can click the link to edit or confirm the registration
+1.  Organizer fills out the form (own data + up to 14 participants)
+2.  Client-side validation: names, EGNs, email, mandatory declarations
+3.  POST /rest/v1/registrations  →  registration row created (status: pending)
+4.  POST /rest/v1/participants   →  all participants inserted
+5.  Supabase webhook fires index.ts (send-confirmation)
+6.  Edge function fetches participants, builds HTML email, sends via Resend
+7.  Organizer receives email with participant table + secure edit link
+8.  Edit link: registration.html?token=<edit_token>
+    - Loads form pre-filled with saved data
+    - Organizer can save changes (PATCH reg + DELETE/re-INSERT participants)
+    - Organizer can confirm registration (PATCH status → confirmed)
+    - Link expires when event_date passes
 ```
 
 ---
 
-## Customizing for a New Event
+## Updating for a New Event
 
-Update these four values in `registration.html` before each event:
+Only two values need changing in `registration.html`:
 
 ```javascript
-const EV_NAME = 'Your Event Name';
-const EV_DATE = 'YYYY-MM-DD';
+const EV_NAME = 'Нов поход — Витоша';
+const EV_DATE = '2026-09-15';
 ```
 
-No other changes are needed for a new event.
+No database migration or redeployment needed.
 
 ---
 
