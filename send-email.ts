@@ -32,7 +32,7 @@ serve(async (req) => {
     if (!head) return new Response('no head', { status: 400 });
 
     const total   = parts.length;
-    const editUrl = `${SITE}/registration.html?token=${edit_token}`;
+    const editUrl = `${SITE}?token=${edit_token}`;
     const evFmt   = new Date(event_date).toLocaleDateString('bg-BG',
       { day:'numeric', month:'long', year:'numeric' });
 
