@@ -73,6 +73,6 @@ SELECT
   p.phone,
   p.email
 FROM registrations r
-JOIN participants p ON p.head_id = r.id
+JOIN participants p ON p.registration_id = r.id
 WHERE r.status != 'cancelled'
 ORDER BY r.created_at, p.is_head DESC, p.name;

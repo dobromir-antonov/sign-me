@@ -1,484 +1,837 @@
 <!DOCTYPE html>
 <html lang="bg">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Запис за Поход</title>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
-<style>
-  :root {
-    --bg:        #f5f4f0;
-    --surface:   #ffffff;
-    --surface2:  #f9f8f5;
-    --border:    #ddd9d0;
-    --border2:   #e8e5de;
-    --green:     #3a6b3a;
-    --green-dim: #5a8a5a;
-    --green-bg:  #edf4ed;
-    --text:      #1a1f17;
-    --text-dim:  #6b7468;
-    --text-muted:#9ba89a;
-    --danger:    #c0392b;
-    --danger-bg: #fdf2f0;
-    --success:   #2e7d32;
-    --gold:      #8a6e2f;
-    --shadow:    0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.05);
-    --shadow-md: 0 4px 12px rgba(0,0,0,.08);
-  }
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Запис за Поход</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@300;400;500&display=swap"
+        rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f5f4f0;
+      --surface: #ffffff;
+      --surface2: #f9f8f5;
+      --border: #ddd9d0;
+      --border2: #e8e5de;
+      --green: #3a6b3a;
+      --green-dim: #5a8a5a;
+      --green-bg: #edf4ed;
+      --text: #1a1f17;
+      --text-dim: #6b7468;
+      --text-muted: #9ba89a;
+      --danger: #c0392b;
+      --danger-bg: #fdf2f0;
+      --success: #2e7d32;
+      --gold: #8a6e2f;
+      --shadow: 0 1px 3px rgba(0, 0, 0, .08), 0 1px 2px rgba(0, 0, 0, .05);
+      --shadow-md: 0 4px 12px rgba(0, 0, 0, .08);
+    }
 
-  body {
-    font-family: 'Inter', sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    min-height: 100vh;
-    padding-bottom: 80px;
-  }
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
-  /* ── Header ── */
-  .header {
-    background: var(--green);
-    padding: 48px 20px 36px;
-    text-align: center;
-    position: relative;
-    overflow: hidden;
-  }
-  .header::before {
-    content: '';
-    position: absolute; inset: 0;
-    background: url("data:image/svg+xml,%3Csvg viewBox='0 0 900 120' xmlns='http://www.w3.org/2000/svg'%3E%3Cpolygon points='0,120 150,40 280,80 420,10 560,70 680,25 820,60 900,20 900,120' fill='rgba(255,255,255,.06)'/%3E%3Cpolygon points='0,120 100,60 220,95 360,35 500,85 640,45 780,75 900,30 900,120' fill='rgba(255,255,255,.04)'/%3E%3C/svg%3E")
-      bottom / cover no-repeat;
-    pointer-events: none;
-  }
-  .header-title {
-    font-family: 'Playfair Display', serif;
-    font-size: clamp(1.8rem, 5vw, 2.8rem);
-    font-weight: 700;
-    color: #fff;
-    letter-spacing: .02em;
-    position: relative;
-    z-index: 1;
-    margin-bottom: 6px;
-  }
-  .header-sub {
-    font-size: .82rem;
-    color: rgba(255,255,255,.65);
-    letter-spacing: .1em;
-    text-transform: uppercase;
-    font-weight: 300;
-    position: relative;
-    z-index: 1;
-  }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding-bottom: 80px;
+    }
 
-  /* ── Event strip ── */
-  .event-strip {
-    background: var(--surface);
-    border-bottom: 1px solid var(--border);
-    padding: 14px 0;
-  }
-  .event-strip-inner {
-    max-width: 720px; margin: 0 auto; padding: 0 20px;
-    display: flex; gap: 32px; flex-wrap: wrap;
-  }
-  .ev-item .lbl { font-size: .6rem; letter-spacing: .1em; text-transform: uppercase; color: var(--text-muted); }
-  .ev-item .val { font-size: .88rem; font-weight: 500; color: var(--green); margin-top: 2px; }
+    /* ── Header ── */
+    .header {
+      background: var(--green);
+      padding: 48px 20px 36px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
 
-  /* ── Layout ── */
-  .container { max-width: 720px; margin: 0 auto; padding: 28px 20px 0; }
+    .header::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: url("data:image/svg+xml,%3Csvg viewBox='0 0 900 120' xmlns='http://www.w3.org/2000/svg'%3E%3Cpolygon points='0,120 150,40 280,80 420,10 560,70 680,25 820,60 900,20 900,120' fill='rgba(255,255,255,.06)'/%3E%3Cpolygon points='0,120 100,60 220,95 360,35 500,85 640,45 780,75 900,30 900,120' fill='rgba(255,255,255,.04)'/%3E%3C/svg%3E") bottom / cover no-repeat;
+      pointer-events: none;
+    }
 
-  /* ── Section ── */
-  .section {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 24px 26px;
-    margin-bottom: 16px;
-    box-shadow: var(--shadow);
-  }
-  .section-title {
-    font-size: .65rem;
-    letter-spacing: .14em;
-    text-transform: uppercase;
-    color: var(--green);
-    font-weight: 600;
-    margin-bottom: 18px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid var(--border2);
-    display: flex; align-items: center; gap: 7px;
-  }
-  .section-title::before {
-    content: '';
-    display: inline-block;
-    width: 3px; height: 12px;
-    background: var(--green);
-    border-radius: 2px;
-  }
+    .header-title {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(1.8rem, 5vw, 2.8rem);
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: .02em;
+      position: relative;
+      z-index: 1;
+      margin-bottom: 6px;
+    }
 
-  /* ── Fields ── */
-  .grid-3 { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 12px; }
-  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-  @media(max-width:560px){
-    .grid-3, .grid-2 { grid-template-columns: 1fr; }
-    .span-2 { grid-column: span 1; }
-  }
-  .span-2 { grid-column: span 2; }
+    .header-sub {
+      font-size: .82rem;
+      color: rgba(255, 255, 255, .65);
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      font-weight: 300;
+      position: relative;
+      z-index: 1;
+    }
 
-  .field { display: flex; flex-direction: column; gap: 5px; }
-  .field label {
-    font-size: .7rem; font-weight: 500;
-    color: var(--text-dim); letter-spacing: .03em;
-  }
-  .field label .req { color: var(--danger); margin-left: 2px; }
-  .field input {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    color: var(--text);
-    font-family: 'Inter', sans-serif;
-    font-size: .88rem;
-    padding: 9px 12px;
-    outline: none;
-    transition: border-color .15s, box-shadow .15s;
-    width: 100%;
-  }
-  .field input:focus {
-    border-color: var(--green);
-    box-shadow: 0 0 0 3px rgba(58,107,58,.1);
-    background: #fff;
-  }
-  .field input::placeholder { color: var(--text-muted); }
-  .field input[readonly] { opacity: .6; cursor: default; background: var(--border2); }
-  .field .err { font-size: .67rem; color: var(--danger); display: none; margin-top: 2px; }
-  .field.invalid input { border-color: var(--danger); background: var(--danger-bg); }
-  .field.invalid .err  { display: block; }
+    /* ── Event strip ── */
+    .event-strip {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 0;
+    }
 
-  /* ── Participants ── */
-  .p-col-headers {
-    display: grid;
-    grid-template-columns: 24px 1fr 130px 58px 28px;
-    gap: 8px; padding: 0 10px 8px;
-    font-size: .6rem; letter-spacing: .09em;
-    text-transform: uppercase; color: var(--text-muted);
-  }
-  @media(max-width:560px){ .p-col-headers { display: none; } }
+    .event-strip-inner {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 0 20px;
+      display: flex;
+      gap: 32px;
+      flex-wrap: wrap;
+    }
 
-  .p-row {
-    display: grid;
-    grid-template-columns: 24px 1fr 130px 58px 28px;
-    gap: 8px; align-items: center;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 8px 10px;
-    margin-bottom: 7px;
-    animation: rowIn .2s ease;
-  }
-  @media(max-width:560px){
-    .p-row { grid-template-columns: 1fr 1fr; }
-    .p-idx { display: none; }
-    .p-name-f { grid-column: span 2; }
-    .p-del-btn { justify-self: end; }
-  }
-  @keyframes rowIn { from{opacity:0;transform:translateY(-4px)} to{opacity:1;transform:translateY(0)} }
+    .ev-item .lbl {
+      font-size: .6rem;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
 
-  .p-idx {
-    font-size: .72rem; font-weight: 600;
-    color: var(--text-muted); text-align: center;
-  }
-  .p-age-field {
-    background: var(--border2);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    font-size: .85rem; text-align: center;
-    padding: 9px 6px; color: var(--text-dim);
-    font-family: 'Inter', sans-serif;
-    cursor: default; outline: none;
-  }
-  .p-age-field.has-val { color: var(--text); font-weight: 500; }
-  .p-del-btn {
-    background: none; border: none;
-    color: #c9b8b8; font-size: 1rem;
-    cursor: pointer; padding: 4px;
-    border-radius: 4px; transition: color .15s, background .15s;
-    line-height: 1;
-  }
-  .p-del-btn:hover { color: var(--danger); background: var(--danger-bg); }
+    .ev-item .val {
+      font-size: .88rem;
+      font-weight: 500;
+      color: var(--green);
+      margin-top: 2px;
+    }
 
-  .p-count { text-align: right; font-size: .72rem; color: var(--text-muted); margin-bottom: 10px; }
-  .p-count strong { color: var(--green); }
+    /* ── Layout ── */
+    .container {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 28px 20px 0;
+    }
 
-  .btn-add {
-    display: flex; align-items: center; justify-content: center; gap: 7px;
-    width: 100%; padding: 10px;
-    background: none; border: 1.5px dashed var(--border);
-    border-radius: 6px; color: var(--text-dim);
-    font-family: 'Inter', sans-serif; font-size: .82rem;
-    cursor: pointer; transition: all .15s; margin-top: 4px;
-  }
-  .btn-add:hover { border-color: var(--green); color: var(--green); background: var(--green-bg); }
+    /* ── Section ── */
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 24px 26px;
+      margin-bottom: 16px;
+      box-shadow: var(--shadow);
+    }
 
-  /* ── Declarations ── */
-  .decl-wrap { display: flex; flex-direction: column; gap: 10px; }
-  .decl {
-    display: flex; align-items: flex-start; gap: 11px;
-    padding: 13px 14px;
-    border: 1.5px solid var(--border);
-    border-radius: 6px; cursor: pointer;
-    transition: border-color .15s, background .15s;
-    background: var(--surface2);
-  }
-  .decl:hover { border-color: var(--green-dim); background: var(--green-bg); }
-  .decl.invalid { border-color: var(--danger); background: var(--danger-bg); }
-  .decl input[type=checkbox] {
-    width: 16px; height: 16px; min-width: 16px;
-    accent-color: var(--green); margin-top: 2px; cursor: pointer;
-  }
-  .decl span { font-size: .82rem; line-height: 1.6; color: var(--text-dim); }
-  .decl-note {
-    font-size: .68rem; color: var(--text-muted);
-    margin-top: 6px; display: flex; align-items: center; gap: 5px;
-  }
-  .decl-note::before { content: 'ℹ'; font-size: .75rem; }
+    .section-title {
+      font-size: .65rem;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: var(--green);
+      font-weight: 600;
+      margin-bottom: 18px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border2);
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
 
-  /* ── Buttons ── */
-  .btn-submit {
-    display: block; width: 100%; padding: 15px;
-    background: var(--green); border: none; border-radius: 8px;
-    color: #fff; font-family: 'Inter', sans-serif;
-    font-size: .92rem; font-weight: 600; letter-spacing: .03em;
-    cursor: pointer; transition: background .15s, transform .1s;
-    box-shadow: 0 2px 8px rgba(58,107,58,.25);
-  }
-  .btn-submit:hover { background: #2e5630; }
-  .btn-submit:active { transform: scale(.99); }
-  .btn-submit:disabled { background: var(--border); color: var(--text-muted); cursor: not-allowed; box-shadow: none; }
+    .section-title::before {
+      content: '';
+      display: inline-block;
+      width: 3px;
+      height: 12px;
+      background: var(--green);
+      border-radius: 2px;
+    }
 
-  .btn-confirm {
-    display: block; width: 100%; padding: 14px;
-    background: #fff; border: 2px solid var(--green); border-radius: 8px;
-    color: var(--green); font-family: 'Inter', sans-serif;
-    font-size: .92rem; font-weight: 600;
-    cursor: pointer; transition: all .15s; margin-top: 10px;
-  }
-  .btn-confirm:hover { background: var(--green-bg); }
-  .btn-confirm:disabled { border-color: var(--border); color: var(--text-muted); cursor: not-allowed; background: #fff; }
+    /* ── Fields ── */
+    .grid-3 {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr;
+      gap: 12px;
+    }
 
-  /* ── Edit banner ── */
-  .edit-banner {
-    display: none; align-items: center; gap: 12px;
-    background: #fffbeb; border: 1px solid #f59e0b;
-    border-radius: 8px; padding: 13px 16px; margin-bottom: 16px;
-  }
-  .edit-banner.show { display: flex; }
-  .edit-banner strong { font-size: .84rem; color: #92400e; display: block; margin-bottom: 1px; }
-  .edit-banner small  { font-size: .74rem; color: #a16207; }
-  .status-pill {
-    margin-left: auto; white-space: nowrap;
-    padding: 3px 10px; border-radius: 20px;
-    font-size: .65rem; font-weight: 700; letter-spacing: .07em; text-transform: uppercase;
-  }
-  .pill-pending   { background: #fef3c7; color: #92400e; border: 1px solid #fbbf24; }
-  .pill-confirmed { background: #d1fae5; color: #065f46; border: 1px solid #34d399; }
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
 
-  /* ── Loading ── */
-  #overlay {
-    position: fixed; inset: 0;
-    background: rgba(245,244,240,.85);
-    display: none; align-items: center; justify-content: center; z-index: 100;
-  }
-  #overlay.show { display: flex; }
-  .spinner {
-    width: 32px; height: 32px;
-    border: 3px solid var(--border);
-    border-top-color: var(--green);
-    border-radius: 50%;
-    animation: spin .7s linear infinite;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
+    @media(max-width:560px) {
 
-  /* ── Toast ── */
-  #toast {
-    position: fixed; bottom: 24px; left: 50%;
-    transform: translateX(-50%) translateY(70px);
-    background: var(--text); color: #fff;
-    padding: 11px 20px; border-radius: 6px;
-    font-size: .83rem; font-weight: 500;
-    transition: transform .3s ease;
-    z-index: 999; white-space: nowrap;
-    box-shadow: var(--shadow-md);
-  }
-  #toast.show    { transform: translateX(-50%) translateY(0); }
-  #toast.success { background: var(--success); }
-  #toast.error   { background: var(--danger); }
-</style>
+      .grid-3,
+      .grid-2 {
+        grid-template-columns: 1fr;
+      }
+
+      .span-2 {
+        grid-column: span 1;
+      }
+    }
+
+    .span-2 {
+      grid-column: span 2;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .field label {
+      font-size: .7rem;
+      font-weight: 500;
+      color: var(--text-dim);
+      letter-spacing: .03em;
+    }
+
+    .field label .req {
+      color: var(--danger);
+      margin-left: 2px;
+    }
+
+    .field input {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      font-size: .88rem;
+      padding: 9px 12px;
+      outline: none;
+      transition: border-color .15s, box-shadow .15s;
+      width: 100%;
+    }
+
+    .field input:focus {
+      border-color: var(--green);
+      box-shadow: 0 0 0 3px rgba(58, 107, 58, .1);
+      background: #fff;
+    }
+
+    .field input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .field input[readonly] {
+      opacity: .6;
+      cursor: default;
+      background: var(--border2);
+    }
+
+    .field .err {
+      font-size: .67rem;
+      color: var(--danger);
+      display: none;
+      margin-top: 2px;
+    }
+
+    .field.invalid input {
+      border-color: var(--danger);
+      background: var(--danger-bg);
+    }
+
+    .field.invalid .err {
+      display: block;
+    }
+
+    /* ── Participants ── */
+    .p-col-headers {
+      display: grid;
+      grid-template-columns: 24px 1fr 130px 58px 28px;
+      gap: 8px;
+      padding: 0 10px 8px;
+      font-size: .6rem;
+      letter-spacing: .09em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    @media(max-width:560px) {
+      .p-col-headers {
+        display: none;
+      }
+    }
+
+    .p-row {
+      display: grid;
+      grid-template-columns: 24px 1fr 130px 58px 28px;
+      gap: 8px;
+      align-items: center;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px 10px;
+      margin-bottom: 7px;
+      animation: rowIn .2s ease;
+    }
+
+    @media(max-width:560px) {
+      .p-row {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .p-idx {
+        display: none;
+      }
+
+      .p-name-f {
+        grid-column: span 2;
+      }
+
+      .p-del-btn {
+        justify-self: end;
+      }
+    }
+
+    @keyframes rowIn {
+      from {
+        opacity: 0;
+        transform: translateY(-4px)
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0)
+      }
+    }
+
+    .p-idx {
+      font-size: .72rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-align: center;
+    }
+
+    .p-age-field {
+      background: var(--border2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: .85rem;
+      text-align: center;
+      padding: 9px 6px;
+      color: var(--text-dim);
+      font-family: 'Inter', sans-serif;
+      cursor: default;
+      outline: none;
+    }
+
+    .p-age-field.has-val {
+      color: var(--text);
+      font-weight: 500;
+    }
+
+    .p-del-btn {
+      background: none;
+      border: none;
+      color: #c9b8b8;
+      font-size: 1rem;
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 4px;
+      transition: color .15s, background .15s;
+      line-height: 1;
+    }
+
+    .p-del-btn:hover {
+      color: var(--danger);
+      background: var(--danger-bg);
+    }
+
+    .p-count {
+      text-align: right;
+      font-size: .72rem;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+    }
+
+    .p-count strong {
+      color: var(--green);
+    }
+
+    .btn-add {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      width: 100%;
+      padding: 10px;
+      background: none;
+      border: 1.5px dashed var(--border);
+      border-radius: 6px;
+      color: var(--text-dim);
+      font-family: 'Inter', sans-serif;
+      font-size: .82rem;
+      cursor: pointer;
+      transition: all .15s;
+      margin-top: 4px;
+    }
+
+    .btn-add:hover {
+      border-color: var(--green);
+      color: var(--green);
+      background: var(--green-bg);
+    }
+
+    /* ── Declarations ── */
+    .decl-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .decl {
+      display: flex;
+      align-items: flex-start;
+      gap: 11px;
+      padding: 13px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: border-color .15s, background .15s;
+      background: var(--surface2);
+    }
+
+    .decl:hover {
+      border-color: var(--green-dim);
+      background: var(--green-bg);
+    }
+
+    .decl.invalid {
+      border-color: var(--danger);
+      background: var(--danger-bg);
+    }
+
+    .decl input[type=checkbox] {
+      width: 16px;
+      height: 16px;
+      min-width: 16px;
+      accent-color: var(--green);
+      margin-top: 2px;
+      cursor: pointer;
+    }
+
+    .decl span {
+      font-size: .82rem;
+      line-height: 1.6;
+      color: var(--text-dim);
+    }
+
+    .decl-note {
+      font-size: .68rem;
+      color: var(--text-muted);
+      margin-top: 6px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .decl-note::before {
+      content: 'ℹ';
+      font-size: .75rem;
+    }
+
+    /* ── Buttons ── */
+    #confirmCancelArea {
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn-submit {
+      display: block;
+      width: 100%;
+      padding: 15px;
+      background: var(--green);
+      border: none;
+      border-radius: 8px;
+      color: #fff;
+      font-family: 'Inter', sans-serif;
+      font-size: .92rem;
+      font-weight: 600;
+      letter-spacing: .03em;
+      cursor: pointer;
+      transition: background .15s, transform .1s;
+      box-shadow: 0 2px 8px rgba(58, 107, 58, .25);
+    }
+
+    .btn-submit:hover {
+      background: #2e5630;
+    }
+
+    .btn-submit:active {
+      transform: scale(.99);
+    }
+
+    .btn-submit:disabled {
+      background: var(--border);
+      color: var(--text-muted);
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    .btn-confirm {
+      display: block;
+      width: 100%;
+      padding: 14px;
+      background: #fff;
+      border: 2px solid var(--green);
+      border-radius: 8px;
+      color: var(--green);
+      font-family: 'Inter', sans-serif;
+      font-size: .92rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .15s;
+      margin-top: 10px;
+    }
+
+    .btn-confirm:hover {
+      background: var(--green-bg);
+    }
+
+    .btn-confirm:disabled {
+      border-color: var(--border);
+      color: var(--text-muted);
+      cursor: not-allowed;
+      background: #fff;
+    }
+
+    .btn-cancel {
+      display: block;
+      width: 100%;
+      padding: 14px;
+      background: #fff;
+      border: 2px solid var(--danger);
+      border-radius: 8px;
+      color: var(--danger);
+      font-family: 'Inter', sans-serif;
+      font-size: .92rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .15s;
+      margin-top: 10px;
+    }
+
+    .btn-cancel:hover {
+      background: var(--danger-bg);
+    }
+
+    .btn-cancel:disabled {
+      border-color: var(--border);
+      color: var(--text-muted);
+      cursor: not-allowed;
+      background: #fff;
+    }
+
+    /* ── Edit banner ── */
+    .edit-banner {
+      display: none;
+      align-items: center;
+      gap: 12px;
+      background: #fffbeb;
+      border: 1px solid #f59e0b;
+      border-radius: 8px;
+      padding: 13px 16px;
+      margin-bottom: 16px;
+    }
+
+    .edit-banner.show {
+      display: flex;
+    }
+
+    .edit-banner strong {
+      font-size: .84rem;
+      color: #92400e;
+      display: block;
+      margin-bottom: 1px;
+    }
+
+    .edit-banner small {
+      font-size: .74rem;
+      color: #a16207;
+    }
+
+    .status-pill {
+      margin-left: auto;
+      white-space: nowrap;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: .65rem;
+      font-weight: 700;
+      letter-spacing: .07em;
+      text-transform: uppercase;
+    }
+
+    .pill-pending {
+      background: #fef3c7;
+      color: #92400e;
+      border: 1px solid #fbbf24;
+    }
+
+    .pill-confirmed {
+      background: #d1fae5;
+      color: #065f46;
+      border: 1px solid #34d399;
+    }
+
+    .pill-cancelled {
+      background: #fee2e2;
+      color: #991b1b;
+      border: 1px solid #f87171;
+    }
+
+    /* ── Loading ── */
+    #overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(245, 244, 240, .85);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+    }
+
+    #overlay.show {
+      display: flex;
+    }
+
+    .spinner {
+      width: 32px;
+      height: 32px;
+      border: 3px solid var(--border);
+      border-top-color: var(--green);
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    /* ── Toast ── */
+    #toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(70px);
+      background: var(--text);
+      color: #fff;
+      padding: 11px 20px;
+      border-radius: 6px;
+      font-size: .83rem;
+      font-weight: 500;
+      transition: transform .3s ease;
+      z-index: 999;
+      white-space: nowrap;
+      box-shadow: var(--shadow-md);
+    }
+
+    #toast.show {
+      transform: translateX(-50%) translateY(0);
+    }
+
+    #toast.success {
+      background: var(--success);
+    }
+
+    #toast.error {
+      background: var(--danger);
+    }
+  </style>
 </head>
+
 <body>
 
-<div id="overlay"><div class="spinner"></div></div>
-
-<div class="header">
-  <h1 class="header-title">Записване за Поход</h1>
-  <p class="header-sub" id="heroSub">Групова регистрация</p>
-</div>
-
-<div class="event-strip">
-  <div class="event-strip-inner">
-    <div class="ev-item"><div class="lbl">Събитие</div><div class="val" id="evName">—</div></div>
-    <div class="ev-item"><div class="lbl">Дата</div><div class="val" id="evDate">—</div></div>
-  </div>
-</div>
-
-<div class="container">
-
-  <div class="edit-banner" id="editBanner">
-    <div>
-      <strong>Режим на редакция</strong>
-      <small id="editDetail">Можеш да промениш данните или да потвърдиш участието.</small>
-    </div>
-    <span class="status-pill pill-pending" id="statusPill">● изчаква</span>
+  <div id="overlay">
+    <div class="spinner"></div>
   </div>
 
-  <form id="form" novalidate>
+  <div class="header">
+    <h1 class="header-title">Записване за Поход</h1>
+    <p class="header-sub" id="heroSub">Групова регистрация</p>
+  </div>
 
-    <!-- Организатор -->
-    <div class="section">
-      <div class="section-title">Организатор на групата</div>
-      <div class="grid-2">
-	  
-        <div class="field  span-2">
-          <label>Три имена <span class="req">*</span></label>
-          <input name="orgName" placeholder="Иван Петров Иванов" required>
-          <span class="err">Задължително поле</span>
-        </div>
-		
-        <div class="field">
-          <label>Телефон <span class="req">*</span></label>
-          <input name="orgPhone" type="tel" placeholder="+359 88 888 8888" required>
-          <span class="err">Задължително поле</span>
-        </div>
-		
-        <div class="field">
-          <label>Имейл <span class="req">*</span></label>
-          <input name="orgEmail" type="email" placeholder="ivan@example.com" required>
-          <span class="err">Невалиден имейл</span>
-        </div>
-		
-		<div class="field">
-          <label>ЕГН <span class="req">*</span></label>
-          <input name="orgEgn" placeholder="0000000000" maxlength="10"
-            oninput="onEgn(this,'orgAgeF','orgBirthH')" required>
-          <span class="err">Невалидно ЕГН</span>
-        </div>
-		
-        <div class="field">
-          <label>Години</label>
-          <input id="orgAgeF" readonly placeholder="—">
-          <input type="hidden" id="orgBirthH">
-        </div>
+  <div class="event-strip">
+    <div class="event-strip-inner">
+      <div class="ev-item">
+        <div class="lbl">Събитие</div>
+        <div class="val" id="evName">—</div>
+      </div>
+      <div class="ev-item">
+        <div class="lbl">Дата</div>
+        <div class="val" id="evDate">—</div>
       </div>
     </div>
+  </div>
 
-    <!-- Участници -->
-    <div class="section">
-      <div class="section-title">Участници</div>
-      <div class="p-count">Добавени: <strong id="pCount">0</strong></div>
-      <div class="p-col-headers">
-        <span>#</span><span>Три имена</span><span>ЕГН</span><span>Год.</span><span></span>
+  <div class="container">
+
+    <div class="edit-banner" id="editBanner">
+      <div>
+        <strong>Режим на редакция</strong>
+        <small id="editDetail">Можеш да промениш данните или да потвърдиш участието.</small>
       </div>
-      <div id="pList"></div>
-      <button type="button" class="btn-add" id="btnAdd">
-        <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor">
-          <path d="M8 2a.75.75 0 0 1 .75.75v4.5h4.5a.75.75 0 0 1 0 1.5h-4.5v4.5a.75.75 0 0 1-1.5 0v-4.5h-4.5a.75.75 0 0 1 0-1.5h4.5v-4.5A.75.75 0 0 1 8 2Z"/>
-        </svg>
-        Добави участник
-      </button>
+      <span class="status-pill pill-pending" id="statusPill">● изчаква</span>
     </div>
 
-    <!-- Декларации — само UI, не се пазят в базата -->
-    <div class="section">
-      <div class="section-title">Декларации</div>
-      <div class="decl-wrap">
-        <label class="decl" id="dInsuranceEl">
-          <input type="checkbox" id="dInsurance">
-          <span>Декларирам, че всички участници са в добро здравословно състояние и нямат противопоказания за планинска дейност. Съгласен/а съм данните им да бъдат използвани за сключване на групова застраховка.</span>
-        </label>
-        <label class="decl" id="dTermsEl">
-          <input type="checkbox" id="dTerms">
-          <span>Запознат/а съм с маршрута, условията на похода и правилата за безопасност. Поемам отговорност за информирането на всички участници в групата.</span>
-        </label>
-        <div class="decl-note">Декларациите са задължителни за продължаване, но не се съхраняват в базата данни.</div>
+    <form id="form" novalidate>
+
+      <!-- Организатор -->
+      <div class="section">
+        <div class="section-title">Организатор на групата</div>
+        <div class="grid-2">
+
+          <div class="field  span-2">
+            <label>Три имена <span class="req">*</span></label>
+            <input name="orgName" placeholder="Иван Петров Иванов" required>
+            <span class="err">Задължително поле</span>
+          </div>
+
+          <div class="field">
+            <label>Телефон <span class="req">*</span></label>
+            <input name="orgPhone" type="tel" placeholder="+359 88 888 8888" required>
+            <span class="err">Задължително поле</span>
+          </div>
+
+          <div class="field">
+            <label>Имейл <span class="req">*</span></label>
+            <input name="orgEmail" type="email" placeholder="ivan@example.com" required>
+            <span class="err">Невалиден имейл</span>
+          </div>
+
+          <div class="field">
+            <label>ЕГН <span class="req">*</span></label>
+            <input name="orgEgn" placeholder="0000000000" maxlength="10"
+                   oninput="onEgn(this,'orgAgeF','orgBirthH')" required>
+            <span class="err">Невалидно ЕГН</span>
+          </div>
+
+          <div class="field">
+            <label>Години</label>
+            <input id="orgAgeF" readonly placeholder="—">
+            <input type="hidden" id="orgBirthH">
+          </div>
+        </div>
       </div>
-    </div>
 
-    <div id="submitArea">
-      <button type="submit" class="btn-submit" id="btnSubmit">Изпрати записването</button>
-    </div>
+      <!-- Участници -->
+      <div class="section">
+        <div class="section-title">Участници</div>
+        <div class="p-count">Добавени: <strong id="pCount">0</strong></div>
+        <div class="p-col-headers">
+          <span>#</span><span>Три имена</span><span>ЕГН</span><span>Год.</span><span></span>
+        </div>
+        <div id="pList"></div>
+        <button type="button" class="btn-add" id="btnAdd">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor">
+            <path
+                  d="M8 2a.75.75 0 0 1 .75.75v4.5h4.5a.75.75 0 0 1 0 1.5h-4.5v4.5a.75.75 0 0 1-1.5 0v-4.5h-4.5a.75.75 0 0 1 0-1.5h4.5v-4.5A.75.75 0 0 1 8 2Z" />
+          </svg>
+          Добави участник
+        </button>
+      </div>
 
-  </form>
-</div>
+      <!-- Декларации — само UI, не се пазят в базата -->
+      <div class="section">
+        <div class="section-title">Декларации</div>
+        <div class="decl-wrap">
+          <label class="decl" id="dInsuranceEl">
+            <input type="checkbox" id="dInsurance">
+            <span>Декларирам, че всички участници са в добро здравословно състояние и нямат противопоказания за
+              планинска дейност. Съгласен/а съм данните им да бъдат използвани за сключване на групова
+              застраховка.</span>
+          </label>
+          <label class="decl" id="dTermsEl">
+            <input type="checkbox" id="dTerms">
+            <span>Запознат/а съм с маршрута, условията на похода и правилата за безопасност. Поемам отговорност за
+              информирането на всички участници в групата.</span>
+          </label>
+          <div class="decl-note">Декларациите са задължителни за продължаване, но не се съхраняват в базата данни.</div>
+        </div>
+      </div>
 
-<div id="toast"></div>
+      <div id="saveArea">
+        <button type="submit" class="btn-submit" id="btnSubmit">Изпрати записването</button>
+      </div>
 
-<script>
-// ══════════════════════════════════════════════
-const SB_URL  = 'https://swgzevzmvznuwlfcuzde.supabase.co';
-const SB_KEY  = 'sb_publishable_lWvvvC4styQAak6jqmXk6g_ybaxrLeZ';
-const EV_NAME = 'Пролетен поход — Рила';   // ← смени
-const EV_DATE = '2026-04-20';              // ← смени YYYY-MM-DD
-// ══════════════════════════════════════════════
+      <div id="confirmCancelArea">
+      </div>
+    </form>
+  </div>
 
-const MAX = 14;
-let uid = 0, editToken = null, editId = null;
+  <div id="toast"></div>
 
-// ── Boot ──────────────────────────────────────
-addEventListener('DOMContentLoaded', async () => {
-  document.getElementById('evName').textContent = EV_NAME;
-  document.getElementById('evDate').textContent = fmt(EV_DATE);
-  const token = new URLSearchParams(location.search).get('token');
-  if (token) { editToken = token; await loadReg(token); }
-});
+  <script>
+    // ══════════════════════════════════════════════
+    const SB_URL = 'https://swgzevzmvznuwlfcuzde.supabase.co';
+    const SB_KEY = 'sb_publishable_lWvvvC4styQAak6jqmXk6g_ybaxrLeZ';
+    const EV_NAME = 'Пролетен поход — Рила';   // ← смени
+    const EV_DATE = '2026-04-20';              // ← смени YYYY-MM-DD
+    // ══════════════════════════════════════════════
 
-// ── EGN ───────────────────────────────────────
-function egnParse(egn) {
-  if (!/^\d{10}$/.test(egn)) return null;
-  let yy=+egn.slice(0,2), mm=+egn.slice(2,4), dd=+egn.slice(4,6), yyyy;
-  if      (mm>=40){mm-=40;yyyy=2000+yy;}
-  else if (mm>=20){mm-=20;yyyy=1800+yy;}
-  else            {       yyyy=1900+yy;}
-  if(mm<1||mm>12||dd<1||dd>31) return null;
-  const d=new Date(yyyy,mm-1,dd);
-  return isNaN(d.getTime())?null:d;
-}
+    const MAX = 14;
+    let uid = 0, editToken = null, editId = null;
 
-function egnAge(bd,ref){
-  const r=new Date(ref); let a=r.getFullYear()-bd.getFullYear();
-  const m=r.getMonth()-bd.getMonth();
-  if(m<0||(m===0&&r.getDate()<bd.getDate()))a--;
-  return a;
-}
+    // ── Boot ──────────────────────────────────────
+    addEventListener('DOMContentLoaded', async () => {
+      document.getElementById('evName').textContent = EV_NAME;
+      document.getElementById('evDate').textContent = fmt(EV_DATE);
+      const token = new URLSearchParams(location.search).get('token');
+      if (token) { editToken = token; await loadReg(token); }
+    });
 
-function onEgn(input, ageId, birthId) {
-  const bd = egnParse(input.value.trim());
-  const el = document.getElementById(ageId);
-  if (bd) {
-    const a = egnAge(bd, EV_DATE);
-    el.value = a + ' г.';
-    el.classList.add('has-val');
-    if (birthId) document.getElementById(birthId).value = bd.toISOString().slice(0,10);
-    input.closest('.field')?.classList.remove('invalid');
-  } else {
-    el.value = '';
-    el.classList.remove('has-val');
-    if (birthId) document.getElementById(birthId).value = '';
-  }
-}
+    // ── EGN ───────────────────────────────────────
+    function egnParse(egn) {
+      if (!/^\d{10}$/.test(egn)) return null;
+      let yy = +egn.slice(0, 2), mm = +egn.slice(2, 4), dd = +egn.slice(4, 6), yyyy;
+      if (mm >= 40) { mm -= 40; yyyy = 2000 + yy; }
+      else if (mm >= 20) { mm -= 20; yyyy = 1800 + yy; }
+      else { yyyy = 1900 + yy; }
+      if (mm < 1 || mm > 12 || dd < 1 || dd > 31) return null;
+      const d = new Date(yyyy, mm - 1, dd);
+      return isNaN(d.getTime()) ? null : d;
+    }
 
-// ── Participant row ───────────────────────────
-function makeRow(idx) {
-  const id = ++uid;
-  const d  = document.createElement('div');
-  d.className = 'p-row'; d.dataset.pid = id;
-  d.innerHTML = `
+    function egnAge(bd, ref) {
+      const r = new Date(ref); let a = r.getFullYear() - bd.getFullYear();
+      const m = r.getMonth() - bd.getMonth();
+      if (m < 0 || (m === 0 && r.getDate() < bd.getDate())) a--;
+      return a;
+    }
+
+    function onEgn(input, ageId, birthId) {
+      const bd = egnParse(input.value.trim());
+      const el = document.getElementById(ageId);
+      if (bd) {
+        const a = egnAge(bd, EV_DATE);
+        el.value = a + ' г.';
+        el.classList.add('has-val');
+        if (birthId) document.getElementById(birthId).value = bd.toISOString().slice(0, 10);
+        input.closest('.field')?.classList.remove('invalid');
+      } else {
+        el.value = '';
+        el.classList.remove('has-val');
+        if (birthId) document.getElementById(birthId).value = '';
+      }
+    }
+
+    // ── Participant row ───────────────────────────
+    function makeRow(idx) {
+      const id = ++uid;
+      const d = document.createElement('div');
+      d.className = 'p-row'; d.dataset.pid = id;
+      d.innerHTML = `
     <div class="p-idx">${idx}</div>
     <div class="field p-name-f" style="min-width:0;">
       <input name="n${id}" placeholder="Три имена" required>
@@ -492,227 +845,258 @@ function makeRow(idx) {
     <input id="a${id}" class="p-age-field" readonly placeholder="—">
     <input type="hidden" id="b${id}">
     <button type="button" class="p-del-btn" onclick="delRow(${id})">✕</button>`;
-  return d;
-}
+      return d;
+    }
 
-const pList = document.getElementById('pList');
+    const pList = document.getElementById('pList');
 
-function reindex() {
-  pList.querySelectorAll('.p-row').forEach((r,i) => r.querySelector('.p-idx').textContent = i+1);
-  const n = pList.children.length;
-  document.getElementById('pCount').textContent = n;
-  document.getElementById('btnAdd').style.display = n >= MAX ? 'none' : 'flex';
-}
+    function reindex() {
+      pList.querySelectorAll('.p-row').forEach((r, i) => r.querySelector('.p-idx').textContent = i + 1);
+      const n = pList.children.length;
+      document.getElementById('pCount').textContent = n;
+      document.getElementById('btnAdd').style.display = n >= MAX ? 'none' : 'flex';
+    }
 
-function addRow() {
-  if (pList.children.length >= MAX) return null;
-  const row = makeRow(pList.children.length + 1);
-  pList.appendChild(row); reindex(); return row;
-}
+    function addRow() {
+      if (pList.children.length >= MAX) return null;
+      const row = makeRow(pList.children.length + 1);
+      pList.appendChild(row); reindex(); return row;
+    }
 
-function delRow(id) {
-  pList.querySelector(`[data-pid="${id}"]`)?.remove(); reindex();
-}
+    function delRow(id) {
+      pList.querySelector(`[data-pid="${id}"]`)?.remove(); reindex();
+    }
 
-document.getElementById('btnAdd').addEventListener('click', addRow);
+    document.getElementById('btnAdd').addEventListener('click', addRow);
 
-// ── Collect ───────────────────────────────────
-function collectParticipants() {
-  const rows = [];
-  // Организатор — is_head = true
-  const orgEgn = v('orgEgn'), orgBd = egnParse(orgEgn);
-  rows.push({
-    is_head:    true,
-    name:       v('orgName'),
-    egn:        orgEgn,
-    birth_date: orgBd ? orgBd.toISOString().slice(0,10) : null,
-    age:        orgBd ? egnAge(orgBd, EV_DATE) : null,
-    phone:      v('orgPhone'),
-    email:      v('orgEmail'),
-  });
-  // Останалите
-  pList.querySelectorAll('.p-row').forEach(row => {
-    const pid = row.dataset.pid;
-    const egn = row.querySelector(`[name=e${pid}]`).value.trim();
-    const bd  = egnParse(egn);
-    rows.push({
-      is_head:    false,
-      name:       row.querySelector(`[name=n${pid}]`).value.trim(),
-      egn,
-      birth_date: bd ? bd.toISOString().slice(0,10) : null,
-      age:        bd ? egnAge(bd, EV_DATE) : null,
-      phone:      null,
-      email:      null,
+    // ── Collect ───────────────────────────────────
+    function collectParticipants() {
+      const rows = [];
+      // Организатор — is_head = true
+      const orgEgn = v('orgEgn'), orgBd = egnParse(orgEgn);
+      rows.push({
+        is_head: true,
+        name: v('orgName'),
+        egn: orgEgn,
+        birth_date: orgBd ? orgBd.toISOString().slice(0, 10) : null,
+        age: orgBd ? egnAge(orgBd, EV_DATE) : null,
+        phone: v('orgPhone'),
+        email: v('orgEmail'),
+      });
+      // Останалите
+      pList.querySelectorAll('.p-row').forEach(row => {
+        const pid = row.dataset.pid;
+        const egn = row.querySelector(`[name=e${pid}]`).value.trim();
+        const bd = egnParse(egn);
+        rows.push({
+          is_head: false,
+          name: row.querySelector(`[name=n${pid}]`).value.trim(),
+          egn,
+          birth_date: bd ? bd.toISOString().slice(0, 10) : null,
+          age: bd ? egnAge(bd, EV_DATE) : null,
+          phone: null,
+          email: null,
+        });
+      });
+      return rows;
+    }
+
+    function v(name) { return (document.querySelector(`[name=${name}]`)?.value || '').trim(); }
+
+    // ── Validate ──────────────────────────────────
+    function validate() {
+      let ok = true;
+      document.querySelectorAll('.field.invalid').forEach(f => f.classList.remove('invalid'));
+      document.querySelectorAll('.decl.invalid').forEach(d => d.classList.remove('invalid'));
+
+      // Организатор
+      ['orgName', 'orgPhone', 'orgEmail'].forEach(n => {
+        const el = document.querySelector(`[name=${n}]`);
+        if (!el.value.trim()) { el.closest('.field').classList.add('invalid'); ok = false; }
+      });
+      const em = document.querySelector('[name=orgEmail]');
+      if (em.value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em.value)) {
+        em.closest('.field').classList.add('invalid'); ok = false;
+      }
+      const orgEgnEl = document.querySelector('[name=orgEgn]');
+      if (!egnParse(orgEgnEl.value.trim())) { orgEgnEl.closest('.field').classList.add('invalid'); ok = false; }
+
+      // Участници
+      pList.querySelectorAll('.p-row').forEach(row => {
+        const pid = row.dataset.pid;
+        const nm = row.querySelector(`[name=n${pid}]`);
+        const eg = row.querySelector(`[name=e${pid}]`);
+        if (!nm.value.trim()) { nm.closest('.field').classList.add('invalid'); ok = false; }
+        if (!egnParse(eg.value.trim())) { eg.closest('.field').classList.add('invalid'); ok = false; }
+      });
+
+      // Декларации — задължителни, но не се пазят в базата
+      if (!document.getElementById('dInsurance').checked) {
+        document.getElementById('dInsuranceEl').classList.add('invalid'); ok = false;
+      }
+      if (!document.getElementById('dTerms').checked) {
+        document.getElementById('dTermsEl').classList.add('invalid'); ok = false;
+      }
+
+      return ok;
+    }
+
+    // ── Submit ────────────────────────────────────
+    document.getElementById('form').addEventListener('submit', async e => {
+      e.preventDefault();
+      if (!validate()) { toast('Провери маркираните полета', 'error'); return; }
+      const btn = document.getElementById('btnSubmit');
+      btn.disabled = true; btn.textContent = 'Записва се...';
+      try {
+        if (editToken) { await doUpdate(); toast('✓ Промените са запазени!', 'success'); btn.textContent = '✓ Запазено!'; setTimeout(() => { btn.disabled = false; btn.textContent = '💾 Запази промените'; }, 2500); }
+        else { await doInsert(); }
+      } catch (err) {
+        console.error(err); toast('Грешка: ' + (err.message || 'опитай отново'), 'error');
+        btn.disabled = false; btn.textContent = editToken ? '💾 Запази промените' : 'Изпрати записването';
+      }
     });
-  });
-  return rows;
-}
 
-function v(name) { return (document.querySelector(`[name=${name}]`)?.value||'').trim(); }
+    // ── Insert ────────────────────────────────────
+    async function doInsert() {
+      // Записваме само събитието — без декларациите
+      const regRes = await sb('POST', '/rest/v1/registrations',
+        { event: EV_NAME, event_date: EV_DATE, status: 'pending' },
+        { 'Prefer': 'return=representation' });
+      if (!regRes.ok) throw new Error((await regRes.json()).message);
+      const [reg] = await regRes.json();
 
-// ── Validate ──────────────────────────────────
-function validate() {
-  let ok = true;
-  document.querySelectorAll('.field.invalid').forEach(f=>f.classList.remove('invalid'));
-  document.querySelectorAll('.decl.invalid').forEach(d=>d.classList.remove('invalid'));
+      const parts = collectParticipants().map(p => ({ ...p, registration_id: reg.id }));
+      const pRes = await sb('POST', '/rest/v1/participants', parts);
+      if (!pRes.ok) throw new Error('Грешка при запис на участниците');
 
-  // Организатор
-  ['orgName','orgPhone','orgEmail'].forEach(n=>{
-    const el=document.querySelector(`[name=${n}]`);
-    if(!el.value.trim()){el.closest('.field').classList.add('invalid');ok=false;}
-  });
-  const em=document.querySelector('[name=orgEmail]');
-  if(em.value&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em.value)){
-    em.closest('.field').classList.add('invalid');ok=false;
-  }
-  const orgEgnEl=document.querySelector('[name=orgEgn]');
-  if(!egnParse(orgEgnEl.value.trim())){orgEgnEl.closest('.field').classList.add('invalid');ok=false;}
+      toast(`✓ Записани ${parts.length} участник${parts.length !== 1 ? 'а' : ''}! Провери имейла.`, 'success');
+      document.getElementById('btnSubmit').textContent = '✓ Записано!';
+      document.getElementById('form').reset();
+      pList.innerHTML = ''; uid = 0;
+    }
 
-  // Участници
-  pList.querySelectorAll('.p-row').forEach(row=>{
-    const pid=row.dataset.pid;
-    const nm=row.querySelector(`[name=n${pid}]`);
-    const eg=row.querySelector(`[name=e${pid}]`);
-    if(!nm.value.trim()){nm.closest('.field').classList.add('invalid');ok=false;}
-    if(!egnParse(eg.value.trim())){eg.closest('.field').classList.add('invalid');ok=false;}
-  });
+    // ── Update ────────────────────────────────────
+    async function doUpdate() {
+      await sb('PATCH', `/rest/v1/registrations?id=eq.${editId}`, { event: EV_NAME, event_date: EV_DATE });
+      await sb('DELETE', `/rest/v1/participants?registration_id=eq.${editId}`);
+      const parts = collectParticipants().map(p => ({ ...p, registration_id: editId }));
+      await sb('POST', '/rest/v1/participants', parts);
+    }
 
-  // Декларации — задължителни, но не се пазят в базата
-  if(!document.getElementById('dInsurance').checked){
-    document.getElementById('dInsuranceEl').classList.add('invalid');ok=false;
-  }
-  if(!document.getElementById('dTerms').checked){
-    document.getElementById('dTermsEl').classList.add('invalid');ok=false;
-  }
+    // ── Confirm ───────────────────────────────────
+    async function confirmReg() {
+      const btn = document.getElementById('btnConfirm');
+      btn.disabled = true; btn.textContent = 'Потвърждава се...';
+      try {
+        await sb('PATCH', `/rest/v1/registrations?id=eq.${editId}`, { status: 'confirmed' });
+        btn.textContent = '✓ Потвърдено!';
+        document.getElementById('statusPill').className = 'status-pill pill-confirmed';
+        document.getElementById('statusPill').textContent = '✓ потвърдено';
+        document.getElementById('btnCancel')?.remove();
+        toast('✓ Участието е потвърдено!', 'success');
+      } catch {
+        toast('Грешка при потвърждаване.', 'error');
+        btn.disabled = false; btn.textContent = '✓ Потвърди участието';
+      }
+    }
 
-  return ok;
-}
+    // ── Cancel ────────────────────────────────────
+    async function cancelReg() {
+      if (!confirm('Сигурен/а ли си, че искаш да откажеш участието?')) return;
+      const btn = document.getElementById('btnCancel');
+      btn.disabled = true; btn.textContent = 'Отказва се...';
+      try {
+        await sb('PATCH', `/rest/v1/registrations?id=eq.${editId}`, { status: 'cancelled' });
+        btn.textContent = '✗ Отказано';
+        document.getElementById('statusPill').className = 'status-pill pill-cancelled';
+        document.getElementById('statusPill').textContent = '✗ отказано';
+        document.getElementById('btnConfirm')?.remove();
+        document.getElementById('btnSubmit').disabled = true;
+        toast('Участието е отказано.', 'error');
+      } catch {
+        toast('Грешка при отказване.', 'error');
+        btn.disabled = false; btn.textContent = '✗ Откажи участието';
+      }
+    }
 
-// ── Submit ────────────────────────────────────
-document.getElementById('form').addEventListener('submit', async e=>{
-  e.preventDefault();
-  if(!validate()){toast('Провери маркираните полета','error');return;}
-  const btn=document.getElementById('btnSubmit');
-  btn.disabled=true; btn.textContent='Записва се...';
-  try {
-    if(editToken){ await doUpdate(); toast('✓ Промените са запазени!','success'); btn.textContent='✓ Запазено!'; setTimeout(()=>{btn.disabled=false;btn.textContent='💾 Запази промените';},2500); }
-    else         { await doInsert(); }
-  } catch(err) {
-    console.error(err); toast('Грешка: '+(err.message||'опитай отново'),'error');
-    btn.disabled=false; btn.textContent=editToken?'💾 Запази промените':'Изпрати записването';
-  }
-});
+    // ── Load for edit ─────────────────────────────
+    async function loadReg(token) {
+      document.getElementById('overlay').classList.add('show');
+      try {
+        const res = await sb('GET', `/rest/v1/registrations?edit_token=eq.${token}&select=*`);
+        const rows = await res.json();
+        if (!rows.length) throw new Error('Невалиден линк.');
+        const reg = rows[0];
+        if (new Date(reg.event_date) < new Date(new Date().toDateString()))
+          throw new Error('Линкът е изтекъл.');
+        editId = reg.id;
+        const pRes = await sb('GET', `/rest/v1/participants?registration_id=eq.${reg.id}&order=is_head.desc,name.asc`);
+        const parts = await pRes.json();
+        fillForm(reg, parts);
+        showEditBanner(reg);
+      } catch (e) {
+        toast(e.message, 'error');
+      } finally {
+        document.getElementById('overlay').classList.remove('show');
+      }
+    }
 
-// ── Insert ────────────────────────────────────
-async function doInsert() {
-  // Записваме само събитието — без декларациите
-  const regRes = await sb('POST','/rest/v1/registrations',
-    { event: EV_NAME, event_date: EV_DATE, status: 'pending' },
-    {'Prefer':'return=representation'});
-  if(!regRes.ok) throw new Error((await regRes.json()).message);
-  const [reg] = await regRes.json();
+    function fillForm(reg, parts) {
+      const head = parts.find(p => p.is_head);
+      const rest = parts.filter(p => !p.is_head);
+      if (head) {
+        set('orgName', head.name); set('orgPhone', head.phone); set('orgEmail', head.email);
+        const egnEl = document.querySelector('[name=orgEgn]');
+        egnEl.value = head.egn || ''; onEgn(egnEl, 'orgAgeF', 'orgBirthH');
+      }
+      rest.forEach(p => {
+        const row = addRow(); if (!row) return;
+        const pid = row.dataset.pid;
+        row.querySelector(`[name=n${pid}]`).value = p.name || '';
+        const egnEl = row.querySelector(`[name=e${pid}]`);
+        egnEl.value = p.egn || ''; onEgn(egnEl, `a${pid}`, `b${pid}`);
+      });
+    }
 
-  const parts = collectParticipants().map(p=>({...p, registration_id: reg.id}));
-  const pRes  = await sb('POST','/rest/v1/participants', parts);
-  if(!pRes.ok) throw new Error('Грешка при запис на участниците');
+    function showEditBanner(reg) {
+      document.getElementById('heroSub').textContent = 'Редакция на записване';
+      document.getElementById('editBanner').classList.add('show');
+      document.getElementById('editDetail').textContent = `Линкът важи до ${fmt(reg.event_date)}.`;
+      if (reg.status === 'confirmed') {
+        document.getElementById('statusPill').className = 'status-pill pill-confirmed';
+        document.getElementById('statusPill').textContent = '✓ потвърдено';
+      } else if (reg.status === 'cancelled') {
+        document.getElementById('statusPill').className = 'status-pill pill-cancelled';
+        document.getElementById('statusPill').textContent = '✗ отказано';
+      }
+      const isPending = reg.status === 'pending';
+      const isCancelled = reg.status === 'cancelled';
+      document.getElementById('saveArea').innerHTML = `<button type="submit" class="btn-submit" id="btnSubmit" ${isCancelled ? 'disabled' : ''}>💾 Запази промените</button>`
+      document.getElementById('confirmCancelArea').innerHTML = `
+        ${isPending
+          ? `<button type="button" class="btn-confirm" id="btnConfirm" onclick="confirmReg()">✓ Потвърди участието</button>`
+          : ''}
 
-  toast(`✓ Записани ${parts.length} участник${parts.length!==1?'а':''}! Провери имейла.`,'success');
-  document.getElementById('btnSubmit').textContent='✓ Записано!';
-  document.getElementById('form').reset();
-  pList.innerHTML=''; uid=0;
-}
+          ${!isCancelled
+          ? `<button type="button" class="btn-cancel" id="btnCancel" onclick="cancelReg()">✗ Откажи участието</button>`
+          : ''}`;
+    }
 
-// ── Update ────────────────────────────────────
-async function doUpdate() {
-  await sb('PATCH',`/rest/v1/registrations?id=eq.${editId}`,{ event: EV_NAME, event_date: EV_DATE });
-  await sb('DELETE',`/rest/v1/participants?registration_id=eq.${editId}`);
-  const parts = collectParticipants().map(p=>({...p, registration_id: editId}));
-  await sb('POST','/rest/v1/participants', parts);
-}
 
-// ── Confirm ───────────────────────────────────
-async function confirmReg() {
-  const btn=document.getElementById('btnConfirm');
-  btn.disabled=true; btn.textContent='Потвърждава се...';
-  try {
-    await sb('PATCH',`/rest/v1/registrations?id=eq.${editId}`,{status:'confirmed'});
-    btn.textContent='✓ Потвърдено!';
-    document.getElementById('statusPill').className='status-pill pill-confirmed';
-    document.getElementById('statusPill').textContent='✓ потвърдено';
-    toast('✓ Участието е потвърдено!','success');
-  } catch {
-    toast('Грешка при потвърждаване.','error');
-    btn.disabled=false; btn.textContent='✓ Потвърди участието';
-  }
-}
-
-// ── Load for edit ─────────────────────────────
-async function loadReg(token) {
-  document.getElementById('overlay').classList.add('show');
-  try {
-    const res  = await sb('GET',`/rest/v1/registrations?edit_token=eq.${token}&select=*`);
-    const rows = await res.json();
-    if(!rows.length) throw new Error('Невалиден линк.');
-    const reg = rows[0];
-    if(new Date(reg.event_date)<new Date(new Date().toDateString()))
-      throw new Error('Линкът е изтекъл.');
-    editId = reg.id;
-    const pRes  = await sb('GET',`/rest/v1/participants?registration_id=eq.${reg.id}&order=is_head.desc,name.asc`);
-    const parts = await pRes.json();
-    fillForm(reg, parts);
-    showEditBanner(reg);
-  } catch(e) {
-    toast(e.message,'error');
-  } finally {
-    document.getElementById('overlay').classList.remove('show');
-  }
-}
-
-function fillForm(reg, parts) {
-  const head = parts.find(p=>p.is_head);
-  const rest = parts.filter(p=>!p.is_head);
-  if(head){
-    set('orgName', head.name); set('orgPhone', head.phone); set('orgEmail', head.email);
-    const egnEl=document.querySelector('[name=orgEgn]');
-    egnEl.value=head.egn||''; onEgn(egnEl,'orgAgeF','orgBirthH');
-  }
-  rest.forEach(p=>{
-    const row=addRow(); if(!row) return;
-    const pid=row.dataset.pid;
-    row.querySelector(`[name=n${pid}]`).value=p.name||'';
-    const egnEl=row.querySelector(`[name=e${pid}]`);
-    egnEl.value=p.egn||''; onEgn(egnEl,`a${pid}`,`b${pid}`);
-  });
-}
-
-function showEditBanner(reg) {
-  document.getElementById('heroSub').textContent='Редакция на записване';
-  document.getElementById('editBanner').classList.add('show');
-  document.getElementById('editDetail').textContent=`Линкът важи до ${fmt(reg.event_date)}.`;
-  if(reg.status==='confirmed'){
-    document.getElementById('statusPill').className='status-pill pill-confirmed';
-    document.getElementById('statusPill').textContent='✓ потвърдено';
-  }
-  document.getElementById('submitArea').innerHTML=`
-    <button type="submit" class="btn-submit" id="btnSubmit">💾 Запази промените</button>
-    ${reg.status!=='confirmed'
-      ?`<button type="button" class="btn-confirm" id="btnConfirm" onclick="confirmReg()">✓ Потвърди участието</button>`
-      :''}`;
-}
-
-// ── Helpers ───────────────────────────────────
-function sb(method,path,body,extra={}) {
-  const opts={method,headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Content-Type':'application/json',...extra}};
-  if(body&&method!=='GET') opts.body=JSON.stringify(body);
-  return fetch(SB_URL+path,opts);
-}
-function set(name,val){const el=document.querySelector(`[name=${name}]`);if(el)el.value=val||'';}
-function fmt(iso){return new Date(iso).toLocaleDateString('bg-BG',{day:'numeric',month:'long',year:'numeric'});}
-function toast(msg,type=''){
-  const t=document.getElementById('toast');
-  t.textContent=msg; t.className=`show ${type}`;
-  setTimeout(()=>t.className='',4500);
-}
-</script>
+    // ── Helpers ───────────────────────────────────
+    function sb(method, path, body, extra = {}) {
+      const opts = { method, headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY} `, 'Content-Type': 'application/json', ...extra } };
+      if (body && method !== 'GET') opts.body = JSON.stringify(body);
+      return fetch(SB_URL + path, opts);
+    }
+    function set(name, val) { const el = document.querySelector(`[name = ${name}]`); if (el) el.value = val || ''; }
+    function fmt(iso) { return new Date(iso).toLocaleDateString('bg-BG', { day: 'numeric', month: 'long', year: 'numeric' }); }
+    function toast(msg, type = '') {
+      const t = document.getElementById('toast');
+      t.textContent = msg; t.className = `show ${type}`;
+      setTimeout(() => t.className = '', 4500);
+    }
+  </script>
 </body>
+
 </html>

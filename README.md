@@ -9,7 +9,8 @@ A serverless, no-build group registration system for Bulgarian mountain trekking
 - **Group registration** — organizer + up to 14 additional participants
 - **Bulgarian EGN support** — auto-calculates age from personal ID numbers at event date
 - **Edit mode** — token-based URL lets organizers update or confirm their registration
-- **Email confirmation** — styled HTML email sent automatically on new submission (via Supabase trigger → Edge Function → Resend)
+- **Email confirmation** — styled HTML email sent automatically on new submission (via Supabase webhook → Edge Function → Brevo)
+- **Cancel registration** — organizer can cancel from the edit link; disables further editing
 - **Declarations** — two mandatory checkboxes validated on submit; not persisted in the database
 - **No build step** — single HTML file, no npm required
 
@@ -22,7 +23,7 @@ A serverless, no-build group registration system for Bulgarian mountain trekking
 | Frontend | HTML5 · Vanilla JS · CSS3                    |
 | Database | PostgreSQL via Supabase                      |
 | Backend  | Deno · Supabase Edge Functions               |
-| Email    | Resend API                                   |
+| Email    | Brevo API                                    |
 | Hosting  | Any static host (Netlify, GitHub Pages, etc.) |
 
 ---
@@ -32,7 +33,7 @@ A serverless, no-build group registration system for Bulgarian mountain trekking
 ```
 signMe/
 ├── registration.html     # Single-page registration form (frontend)
-├── index.ts              # Supabase Edge Function — sends confirmation emails
+├── send-email.ts         # Supabase Edge Function — sends confirmation emails via Brevo
 └── supabase_setup.sql    # Database schema, RLS policies, and export view
 ```
 
@@ -66,6 +67,14 @@ signMe/
 | `phone`           | text        | Organizer only                                     |
 | `email`           | text        | Organizer only                                     |
 
+### Registration statuses
+
+| Status      | Description                              |
+|-------------|------------------------------------------|
+| `pending`   | Submitted, awaiting confirmation         |
+| `confirmed` | Organizer confirmed participation        |
+| `cancelled` | Organizer cancelled — editing disabled   |
+
 ### Row-Level Security (anon role)
 
 | Table           | INSERT | SELECT | UPDATE                          | DELETE |
@@ -87,19 +96,21 @@ Run `supabase_setup.sql` in **Supabase → SQL Editor → New query → Run**.
 
 ### 2. Edge Function
 
-The function must be deployed into your Supabase project and wired to a database webhook on `INSERT` into `registrations`.
+Deploy `send-email.ts` via the Supabase portal (**Edge Functions → Deploy a new function**) or CLI:
 
 ```bash
-supabase functions deploy send-confirmation
+supabase functions deploy send-email
 ```
 
-Set the required secrets:
+Set the required secrets in **Supabase portal → Settings → Edge Functions** (or Vault):
 
-```bash
-supabase secrets set RESEND_API_KEY=re_xxxx
-supabase secrets set SITE_URL=https://your-domain.netlify.app
-supabase secrets set FROM_EMAIL=noreply@yourdomain.com
-```
+| Secret | Value |
+|---|---|
+| `BREVO_API_KEY` | API key from Brevo dashboard |
+| `FROM_EMAIL` | Your verified sender email |
+| `SITE_URL` | Your frontend URL (e.g. `https://your-site.netlify.app`) |
+
+Then create a **Database Webhook**: Database → Webhooks → Create → table `registrations`, event `INSERT`, type `Edge Function`, function `send-email`.
 
 `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are injected automatically by Supabase.
 
@@ -128,12 +139,13 @@ Serve `registration.html` from any static host. No build step required.
 3.  POST /rest/v1/registrations  →  registration row created (status: pending)
 4.  POST /rest/v1/participants   →  all participants inserted
 5.  Supabase webhook fires index.ts (send-confirmation)
-6.  Edge function fetches participants, builds HTML email, sends via Resend
+6.  Edge function fetches participants, builds HTML email, sends via Brevo
 7.  Organizer receives email with participant table + secure edit link
 8.  Edit link: registration.html?token=<edit_token>
     - Loads form pre-filled with saved data
     - Organizer can save changes (PATCH reg + DELETE/re-INSERT participants)
-    - Organizer can confirm registration (PATCH status → confirmed)
+    - Organizer can confirm registration  (PATCH status → confirmed)
+    - Organizer can cancel registration   (PATCH status → cancelled, editing disabled)
     - Link expires when event_date passes
 ```
 
