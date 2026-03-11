@@ -1,0 +1,7 @@
+{
+  "name": "signme",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "cp index.html build/ && cp -r assets build/"
+  }
+}
