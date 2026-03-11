@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Email Preview</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    body { margin: 0; padding: 20px; background: #e0e0e0; font-family: 'Inter', Arial, sans-serif; }
+    .preview-label {
+      text-align: center;
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 16px;
+      font-family: monospace;
+      letter-spacing: .05em;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="preview-label">⚠ EMAIL PREVIEW — sample data only</div>
+
+  <!-- ─── Email starts here ─── -->
+  <table width="100%" cellpadding="0" cellspacing="0" style="padding:0 14px;">
+  <tr><td align="center">
+  <table width="580" cellpadding="0" cellspacing="0"
+    style="background:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,.08);border:1px solid #ddd9d0;">
+
+    <!-- Header -->
+    <tr><td style="background:#3a6b3a;padding:36px 32px;text-align:center;">
+      <div style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.65);font-weight:300;margin-bottom:8px;">
+        Потвърждение за записване</div>
+      <div style="font-family:'Playfair Display',Georgia,serif;font-size:24px;font-weight:700;color:#ffffff;letter-spacing:.02em;">
+        Благотворителен исторически поход "По стъпките на Караджов"
+      </div>
+      <div style="font-size:12px;color:rgba(255,255,255,.7);margin-top:6px;font-weight:300;">
+        18 април 2026 г.
+      </div>
+    </td></tr>
+
+    <!-- Body -->
+    <tr><td style="padding:28px 32px;">
+
+      <p style="margin:0 0 8px;color:#1a1f17;font-size:15px;">
+        Здравей, <strong style="font-weight:600;">Иван Петров Иванов</strong>,
+      </p>
+      <p style="margin:0 0 24px;color:#6b7468;font-size:13px;line-height:1.6;">
+        Записването е получено успешно. Записани са <strong style="color:#1a1f17;">3 участника</strong>.
+        Референтен номер: <span style="background:#f5f4f0;padding:2px 7px;border-radius:4px;font-family:monospace;font-size:11px;color:#6b7468;border:1px solid #ddd9d0;">A1B2C3D4</span>
+      </p>
+
+      <!-- Participants section -->
+      <div style="margin-bottom:24px;">
+        <div style="font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#3a6b3a;font-weight:600;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid #e8e5de;">
+          <span style="display:inline-block;width:3px;height:12px;background:#3a6b3a;border-radius:2px;vertical-align:middle;margin-right:6px;"></span>Участници
+        </div>
+        <table width="100%" cellpadding="0" cellspacing="0"
+          style="border:1px solid #ddd9d0;border-radius:6px;overflow:hidden;">
+          <thead>
+            <tr style="background:#f9f8f5;">
+              <th style="padding:8px 12px;text-align:left;color:#9ba89a;font-size:10px;font-weight:500;letter-spacing:.09em;text-transform:uppercase;">#</th>
+              <th style="padding:8px 12px;text-align:left;color:#9ba89a;font-size:10px;font-weight:500;letter-spacing:.09em;text-transform:uppercase;">Три имена</th>
+              <th style="padding:8px 12px;text-align:left;color:#9ba89a;font-size:10px;font-weight:500;letter-spacing:.09em;text-transform:uppercase;">ЕГН</th>
+              <th style="padding:8px 12px;text-align:center;color:#9ba89a;font-size:10px;font-weight:500;letter-spacing:.09em;text-transform:uppercase;">Год.</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom:1px solid #e8e5de;">
+              <td style="padding:8px 12px;color:#9ba89a;font-size:11px;">1</td>
+              <td style="padding:8px 12px;font-weight:600;font-size:13px;color:#1a1f17;">
+                Иван Петров Иванов
+                <span style="color:#3a6b3a;font-size:10px;letter-spacing:.05em;text-transform:uppercase;">(орг.)</span>
+              </td>
+              <td style="padding:8px 12px;font-family:monospace;font-size:11px;color:#6b7468;">8501011234</td>
+              <td style="padding:8px 12px;text-align:center;font-size:11px;color:#6b7468;">41</td>
+            </tr>
+            <tr style="border-bottom:1px solid #e8e5de;">
+              <td style="padding:8px 12px;color:#9ba89a;font-size:11px;">2</td>
+              <td style="padding:8px 12px;font-weight:400;font-size:13px;color:#1a1f17;">Мария Георгиева Петрова</td>
+              <td style="padding:8px 12px;font-family:monospace;font-size:11px;color:#6b7468;">9203154567</td>
+              <td style="padding:8px 12px;text-align:center;font-size:11px;color:#6b7468;">34</td>
+            </tr>
+            <tr>
+              <td style="padding:8px 12px;color:#9ba89a;font-size:11px;">3</td>
+              <td style="padding:8px 12px;font-weight:400;font-size:13px;color:#1a1f17;">Стефан Николаев Димитров</td>
+              <td style="padding:8px 12px;font-family:monospace;font-size:11px;color:#6b7468;">0005127890</td>
+              <td style="padding:8px 12px;text-align:center;font-size:11px;color:#6b7468;">25</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Edit link section -->
+      <div style="background:#edf4ed;border:1px solid #a8c9a8;border-radius:6px;padding:16px 18px;margin-bottom:24px;">
+        <div style="font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#3a6b3a;font-weight:600;margin-bottom:6px;">
+          <span style="display:inline-block;width:3px;height:10px;background:#3a6b3a;border-radius:2px;vertical-align:middle;margin-right:6px;"></span>Линк за редакция
+        </div>
+        <div style="font-size:12px;color:#6b7468;margin-bottom:14px;line-height:1.6;">
+          Можеш да редактираш данните или да потвърдиш участието. Валиден до 18 април 2026 г.
+        </div>
+        <a href="#"
+          style="display:inline-block;background:#3a6b3a;color:#ffffff;padding:10px 20px;
+                 border-radius:6px;text-decoration:none;font-size:12px;font-weight:600;
+                 letter-spacing:.03em;">
+          Отвори записването →
+        </a>
+      </div>
+
+      <p style="margin:0;font-size:11px;color:#9ba89a;line-height:1.6;">
+        Ако не си попълвал/а тази форма — игнорирай имейла.
+      </p>
+    </td></tr>
+
+    <!-- Footer -->
+    <tr><td style="background:#f9f8f5;padding:14px 32px;border-top:1px solid #e8e5de;
+                   text-align:center;font-size:10px;color:#9ba89a;letter-spacing:.05em;">
+      Благотворителен исторически поход "По стъпките на Караджов" · 18 април 2026 г.
+    </td></tr>
+
+  </table></td></tr></table>
+  <!-- ─── Email ends here ─── -->
+
+</body>
+</html>
