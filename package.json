@@ -2,6 +2,7 @@
   "name": "signme",
   "version": "1.0.0",
   "scripts": {
+    "prebuild": "rm -rf build/*",
     "build": "cp index.html build/ && cp app.css build/ && cp app.js build/ && cp -r assets build/"
   }
 }

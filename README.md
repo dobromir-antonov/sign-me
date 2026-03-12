@@ -1,6 +1,6 @@
-# signMe — Group Hiking Registration
+# Sign Me — Event Group Registration
 
-A serverless, no-build group registration system for Bulgarian mountain trekking events. An organizer fills out one form for the whole group, gets an email confirmation with a secure edit link, and can update or confirm the registration any time before the event.
+A serverless, no-build group registration system for group events. An organizer fills out one form for the whole group, gets an email confirmation with a secure edit link, and can update or confirm the registration any time before the event.
 
 ---
 
