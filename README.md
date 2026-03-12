@@ -9,21 +9,20 @@ A serverless, no-build group registration system for Bulgarian mountain trekking
 - **Group registration** — organizer + up to 14 additional participants
 - **Bulgarian EGN support** — auto-calculates age from personal ID numbers at event date
 - **Edit mode** — token-based URL lets organizers update or confirm their registration
-- **Email confirmation** — styled HTML email sent automatically on new submission (via Supabase webhook → Edge Function → Brevo)
+- **Email confirmation** — styled HTML email sent client-side via EmailJS on new submission
 - **Cancel registration** — organizer can cancel from the edit link; disables further editing
 - **Declarations** — two mandatory checkboxes validated on submit; not persisted in the database
-- **No build step** — single HTML file, no npm required
+- **No backend required** — all logic runs in the browser; only Supabase (DB) and EmailJS (email) are external services
 
 ---
 
 ## Tech Stack
 
-| Layer    | Technology                                   |
-|----------|----------------------------------------------|
-| Frontend | HTML5 · Vanilla JS · CSS3                    |
-| Database | PostgreSQL via Supabase                      |
-| Backend  | Deno · Supabase Edge Functions               |
-| Email    | Brevo API                                    |
+| Layer    | Technology                                    |
+|----------|-----------------------------------------------|
+| Frontend | HTML5 · Vanilla JS · CSS3                     |
+| Database | PostgreSQL via Supabase                       |
+| Email    | EmailJS (client-side, no server needed)       |
 | Hosting  | Any static host (Netlify, GitHub Pages, etc.) |
 
 ---
@@ -32,9 +31,19 @@ A serverless, no-build group registration system for Bulgarian mountain trekking
 
 ```
 signMe/
-├── registration.html     # Single-page registration form (frontend)
-├── send-email.ts         # Supabase Edge Function — sends confirmation emails via Brevo
-└── supabase_setup.sql    # Database schema, RLS policies, and export view
+├── index.html                                    # Registration form
+├── app.js                                        # All JavaScript logic
+├── app.css                                       # All styles
+├── assets/
+│   └── logo.jpg
+├── database/
+│   └── supabase_setup.sql                        # DB schema, RLS policies, export view
+└── email/
+    ├── emailjs/
+    │   └── event-registration.template.html      # EmailJS dashboard template (paste into editor)
+    └── brevo/
+        ├── send-email.supabase-edge-function.ts  # Legacy Brevo edge function (archived)
+        └── preview-email.html                    # Legacy email preview (archived)
 ```
 
 ---
@@ -77,10 +86,10 @@ signMe/
 
 ### Row-Level Security (anon role)
 
-| Table           | INSERT | SELECT | UPDATE                          | DELETE |
-|-----------------|--------|--------|---------------------------------|--------|
+| Table           | INSERT | SELECT | UPDATE                              | DELETE |
+|-----------------|--------|--------|-------------------------------------|--------|
 | `registrations` | ✓      | ✓      | ✓ (only while `event_date` ≥ today) | —      |
-| `participants`  | ✓      | ✓      | —                               | ✓      |
+| `participants`  | ✓      | ✓      | —                                   | ✓      |
 
 ### `export_view`
 
@@ -92,42 +101,42 @@ A read-only view joining `registrations` and `participants` (non-cancelled) — 
 
 ### 1. Database
 
-Run `supabase_setup.sql` in **Supabase → SQL Editor → New query → Run**.
+Run `database/supabase_setup.sql` in **Supabase → SQL Editor → New query → Run**.
 
-### 2. Edge Function
+### 2. EmailJS
 
-Deploy `send-email.ts` via the Supabase portal (**Edge Functions → Deploy a new function**) or CLI:
-
-```bash
-supabase functions deploy send-email
-```
-
-Set the required secrets in **Supabase portal → Settings → Edge Functions** (or Vault):
-
-| Secret | Value |
-|---|---|
-| `BREVO_API_KEY` | API key from Brevo dashboard |
-| `FROM_EMAIL` | Your verified sender email |
-| `SITE_URL` | Your frontend URL (e.g. `https://your-site.netlify.app`) |
-
-Then create a **Database Webhook**: Database → Webhooks → Create → table `registrations`, event `INSERT`, type `Edge Function`, function `send-email`.
-
-`SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are injected automatically by Supabase.
+1. Create an account at [emailjs.com](https://www.emailjs.com)
+2. Add an **Email Service** (Gmail, Outlook, etc.) — note the **Service ID**
+3. Create a new **Email Template**:
+   - Copy the HTML from `email/emailjs/event-registration.template.html` into the template body
+   - Set **To** field: `{{to_email}}`
+   - Set **Subject**: `Записване — {{event}} ({{total}} уч.)`
+   - Note the **Template ID**
+4. Copy your **Public Key** from Account → API Keys
 
 ### 3. Frontend
 
-Edit the four constants at the top of the `<script>` block in `registration.html`:
+Edit the constants at the top of `app.js`:
 
 ```javascript
-const SB_URL  = 'https://your-project.supabase.co';  // Supabase project URL
-const SB_KEY  = 'your_anon_public_key';              // Supabase anon/publishable key
-const EV_NAME = 'Пролетен поход — Рила';             // Event name (change per event)
-const EV_DATE = '2026-04-20';                        // Event date YYYY-MM-DD
+const SB_URL          = 'https://your-project.supabase.co'; // Supabase project URL
+const SB_KEY          = 'your_anon_public_key';             // Supabase anon/publishable key
+
+const EJS_PUBLIC_KEY  = 'your_public_key';                  // EmailJS Account → API Keys
+const EJS_SERVICE_ID  = 'your_service_id';                  // EmailJS Email Services → Service ID
+const EJS_TEMPLATE_ID = 'your_template_id';                 // EmailJS Email Templates → Template ID
+
+const EV_NAME = 'Пролетен поход — Рила';                    // Event name (change per event)
+const EV_DATE = '2026-04-20';                               // Event date YYYY-MM-DD
 ```
 
-### 4. Deploy Frontend
+### 4. Build & Deploy
 
-Serve `registration.html` from any static host. No build step required.
+```bash
+npm run build   # copies index.html, app.css, app.js, assets/ into build/
+```
+
+Then serve the `build/` directory from any static host.
 
 ---
 
@@ -138,10 +147,9 @@ Serve `registration.html` from any static host. No build step required.
 2.  Client-side validation: names, EGNs, email, mandatory declarations
 3.  POST /rest/v1/registrations  →  registration row created (status: pending)
 4.  POST /rest/v1/participants   →  all participants inserted
-5.  Supabase webhook fires index.ts (send-confirmation)
-6.  Edge function fetches participants, builds HTML email, sends via Brevo
-7.  Organizer receives email with participant table + secure edit link
-8.  Edit link: registration.html?token=<edit_token>
+5.  EmailJS sends a styled HTML confirmation email directly from the browser
+6.  Organizer receives email with participant table + secure edit link
+7.  Edit link: index.html?token=<edit_token>
     - Loads form pre-filled with saved data
     - Organizer can save changes (PATCH reg + DELETE/re-INSERT participants)
     - Organizer can confirm registration  (PATCH status → confirmed)
@@ -153,7 +161,7 @@ Serve `registration.html` from any static host. No build step required.
 
 ## Updating for a New Event
 
-Only two values need changing in `registration.html`:
+Only two values need changing in `app.js`:
 
 ```javascript
 const EV_NAME = 'Нов поход — Витоша';

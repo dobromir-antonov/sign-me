@@ -1,3 +1,6 @@
+
+/*** DEPLOY AS SUPABASE EDGE FUNCTION ***/
+
 // supabase/functions/send-confirmation/index.ts
 //
 // supabase functions deploy send-confirmation
