@@ -83,12 +83,17 @@ body {
 .event-wrapper {
   max-width: 680px;
   display: flex;
+  flex-direction: row-reverse;
   align-items: center;
   flex-wrap: wrap;
   justify-content: center;
   flex: auto;
   gap: 10px;
   padding: 10px 0;
+}
+
+.event-wrapper .logo {
+  height: 200px;
 }
 
 .event-strip-inner {
@@ -257,9 +262,8 @@ body {
     padding: 12px 16px;
   }
 
-  .event-wrapper img {
+  .event-wrapper .logo {
     align-self: center;
-    height: 100px !important;
   }
 }
 
