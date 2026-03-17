@@ -99,7 +99,7 @@ body {
 .event-strip-inner {
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  gap: 25px;
   flex-wrap: wrap;
   flex: auto;
 }
