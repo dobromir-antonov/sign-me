@@ -122,7 +122,7 @@ body {
 .container {
   max-width: 720px;
   margin: 0 auto;
-  padding: 28px 20px 0;
+  padding: min(28px, 2%) min(20px, 2%) 0;
 }
 
 /* ── Section ── */
