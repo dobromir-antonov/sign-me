@@ -11,6 +11,7 @@ const EJS_TEMPLATE_ID = 'tmp-event.reg.confirm';          // Email Templates →
 // Event
 const EV_NAME = 'Благотворителен исторически поход „По стъпките на Караджов"';
 const EV_DATE = '2026-04-18';                 // YYYY-MM-DD
+const EV_DEADLINE_BEFORE_DUE_IN_DAYS = 5;                
 // ══════════════════════════════════════════════
 
 emailjs.init(EJS_PUBLIC_KEY);
@@ -213,7 +214,7 @@ document.getElementById('form').addEventListener('submit', async e => {
 // ── Insert ────────────────────────────────────
 async function doInsert() {
   const regRes = await sb('POST', '/rest/v1/registrations',
-    { event: EV_NAME, event_date: EV_DATE, status: 'pending' },
+    { event: EV_NAME, event_date: EV_DATE, status: 'pending', notes: v('notes') || null },
     { 'Prefer': 'return=representation' });
   if (!regRes.ok) throw new Error((await regRes.json()).message);
   const [reg] = await regRes.json();
@@ -235,6 +236,9 @@ async function sendConfirmationEmail(reg, parts) {
   const total = parts.length;
   const evFmt = fmt(reg.event_date);
   const editUrl = `${location.origin}${location.pathname}?token=${reg.edit_token}`;
+  const deadlineDate = new Date(reg.event_date); 
+  deadlineDate.setDate(deadlineDate.getDate() - EV_DEADLINE_BEFORE_DUE_IN_DAYS);
+  const editDeadline = fmt(deadlineDate.toISOString().slice(0, 10));
   const refId = reg.id.slice(0, 8).toUpperCase();
   const totalLabel = total !== 1 ? 'участника' : 'участник';
 
@@ -257,13 +261,14 @@ async function sendConfirmationEmail(reg, parts) {
     total_label: totalLabel,
     ref_id: refId,
     edit_url: editUrl,
+    edit_deadline: editDeadline,
     participants_rows: participantRows,
   });
 }
 
 // ── Update ────────────────────────────────────
 async function doUpdate() {
-  await sb('PATCH', `/rest/v1/registrations?id=eq.${editId}`, { event: EV_NAME, event_date: EV_DATE });
+  await sb('PATCH', `/rest/v1/registrations?id=eq.${editId}`, { event: EV_NAME, event_date: EV_DATE, notes: v('notes') || null });
   await sb('DELETE', `/rest/v1/participants?registration_id=eq.${editId}`);
   const parts = collectParticipants().map(p => ({ ...p, registration_id: editId }));
   await sb('POST', '/rest/v1/participants', parts);
@@ -313,12 +318,13 @@ async function loadReg(token) {
     const rows = await res.json();
     if (!rows.length) throw new Error('Невалиден линк.');
     const reg = rows[0];
-    if (new Date(reg.event_date) < new Date(new Date().toDateString()))
+    const cutoff = new Date(); cutoff.setDate(cutoff.getDate() + 5);
+    if (new Date(reg.event_date) <= cutoff)
       throw new Error('Линкът е изтекъл.');
     editId = reg.id;
     const pRes = await sb('GET', `/rest/v1/participants?registration_id=eq.${reg.id}&order=is_head.desc,name.asc`);
     const parts = await pRes.json();
-    fillForm(parts);
+    fillForm(parts, reg);
     showEditBanner(reg);
   } catch (e) {
     toast(e.message, 'error');
@@ -327,7 +333,7 @@ async function loadReg(token) {
   }
 }
 
-function fillForm(parts) {
+function fillForm(parts, reg) {
   const head = parts.find(p => p.is_head);
   const rest = parts.filter(p => !p.is_head);
   if (head) {
@@ -335,6 +341,7 @@ function fillForm(parts) {
     const egnEl = document.querySelector('[name=orgEgn]');
     egnEl.value = head.egn || ''; onEgn(egnEl, 'orgAgeF', 'orgBirthH');
   }
+  if (reg?.notes) { const el = document.querySelector('[name=notes]'); if (el) el.value = reg.notes; }
   rest.forEach(p => {
     const row = addRow(); if (!row) return;
     const pid = row.dataset.pid;
@@ -347,7 +354,8 @@ function fillForm(parts) {
 function showEditBanner(reg) {
   document.getElementById('heroSub').textContent = 'Редакция на записване';
   document.getElementById('editBanner').classList.add('show');
-  document.getElementById('editDetail').textContent = `Линкът важи до ${fmt(reg.event_date)}.`;
+  const deadline = new Date(reg.event_date); deadline.setDate(deadline.getDate() - 5);
+  document.getElementById('editDetail').textContent = `Редакцията е възможна до ${fmt(deadline.toISOString().slice(0, 10))}.`;
   if (reg.status === 'confirmed') {
     document.getElementById('statusPill').className = 'status-pill pill-confirmed';
     document.getElementById('statusPill').textContent = '✓ потвърдено';

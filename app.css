@@ -161,6 +161,7 @@ body {
 .mute-text {
   color: var(--text-muted)
 }
+
 /* ── Fields ── */
 .grid-3 {
   display: grid;
@@ -197,7 +198,8 @@ body {
   margin-left: 2px;
 }
 
-.field input {
+.field input,
+.field textarea {
   background: var(--surface2);
   border: 1px solid var(--border);
   border-radius: 6px;
@@ -210,17 +212,20 @@ body {
   width: 100%;
 }
 
-.field input:focus {
+.field input:focus,
+.field textarea:focus {
   border-color: var(--green);
   box-shadow: 0 0 0 3px rgba(58, 107, 58, .1);
   background: #fff;
 }
 
-.field input::placeholder {
+.field input::placeholder,
+.field textarea::placeholder {
   color: var(--text-muted);
 }
 
-.field input[readonly] {
+.field input[readonly],
+.field textarea[readonly] {
   opacity: .6;
   cursor: default;
   background: var(--border2);
@@ -233,7 +238,8 @@ body {
   margin-top: 2px;
 }
 
-.field.invalid input {
+.field.invalid input,
+.field.invalid textarea {
   border-color: var(--danger);
   background: var(--danger-bg);
 }
@@ -282,7 +288,7 @@ body {
   align-items: center;
 }
 
-.p-row-fields  {
+.p-row-fields {
   gap: 6px;
   display: flex;
   flex: auto;

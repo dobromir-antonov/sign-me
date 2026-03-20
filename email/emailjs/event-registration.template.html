@@ -12,6 +12,7 @@
     {{total_label}}       — "участника" / "участник" (grammatical form)
     {{ref_id}}            — first 8 chars of registration UUID, uppercased
     {{edit_url}}          — full edit link  https://…?token=…
+    {{edit_deadline}}     — last date the registration can be edited (event_date − 5 days)
     {{{participants_rows}}} — pre-built <tr>…</tr> HTML rows (triple-brace = raw HTML)
 
   Recommended EmailJS template settings:
@@ -77,7 +78,7 @@
         <span style="display:inline-block;width:3px;height:10px;background:#3a6b3a;border-radius:2px;vertical-align:middle;margin-right:6px;"></span>Линк за редакция
       </div>
       <div style="font-size:12px;color:#6b7468;margin-bottom:14px;line-height:1.6;">
-        Можеш да редактираш данните или да потвърдиш участието. Валиден до {{event_date}}.
+        Можеш да редактираш данните или да потвърдиш участието. Валиден до {{edit_deadline}}.
       </div>
       <a href="{{edit_url}}"
         style="display:inline-block;background:#3a6b3a;color:#ffffff;padding:10px 20px;
@@ -95,7 +96,7 @@
   <!-- Footer -->
   <tr><td style="background:#f9f8f5;padding:14px 32px;border-top:1px solid #e8e5de;
                  text-align:center;font-size:10px;color:#9ba89a;letter-spacing:.05em;">
-    {{event}} · {{event_date}}
+    {{event}} · {{event_date}} · редакция до {{edit_deadline}}
   </td></tr>
 
 </table></td></tr></table>

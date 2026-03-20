@@ -1,8 +1,8 @@
 -- ═══════════════════════════════════════════════════════════════════
--- Изпълни в Supabase → SQL Editor → New query → Run
+-- Run in Supabase → SQL Editor → New query → Run
 -- ═══════════════════════════════════════════════════════════════════
 
--- ── 1. Header (събитие + мета) ────────────────────────────────────
+-- ── 1. Header (event + meta) ──────────────────────────────────────
 create table public.registrations (
   id uuid not null default gen_random_uuid (),
   created_at timestamp with time zone null default now(),
@@ -15,7 +15,7 @@ create table public.registrations (
   constraint registrations_edit_token_key unique (edit_token)
 ) TABLESPACE pg_default;
 
--- ── 2. Всички участници (включително организаторът) ───────────────
+-- ── 2. All participants (including the group organiser) ───────────
 create table public.participants (
   id uuid not null default gen_random_uuid (),
   registration_id uuid not null,
@@ -37,27 +37,46 @@ create index IF not exists idx_participants_head on public.participants using bt
 ALTER TABLE registrations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE participants  ENABLE ROW LEVEL SECURITY;
 
+-- INSERT: anon users may create a new registration
 CREATE POLICY "anon_insert_reg" ON registrations
   FOR INSERT TO anon WITH CHECK (true);
 
+-- SELECT: public read (anon key carries no custom claims, so token-based filtering
+-- is not enforceable here — restrict sensitive queries via the service_role key instead)
 CREATE POLICY "anon_select_reg" ON registrations
   FOR SELECT TO anon USING (true);
 
+-- UPDATE: only when the event is more than 5 days away and only by the edit_token owner
 CREATE POLICY "anon_update_reg" ON public.registrations
 FOR UPDATE TO anon
-USING (event_date >= CURRENT_DATE)
+USING (
+  event_date > CURRENT_DATE + interval '5 days'
+  AND edit_token = (current_setting('request.jwt.claims', true)::json->>'edit_token')::uuid
+)
 WITH CHECK (true);
 
+-- INSERT participants
 CREATE POLICY "anon_insert_par" ON participants
   FOR INSERT TO anon WITH CHECK (true);
 
+-- SELECT participants: public read (same reasoning as anon_select_reg)
 CREATE POLICY "anon_select_par" ON participants
   FOR SELECT TO anon USING (true);
 
+-- DELETE participants: only for future-event registrations owned by the caller.
+-- NOTE: the previous USING (true) allowed anyone to delete arbitrary participants.
 CREATE POLICY "anon_delete_par" ON participants
-  FOR DELETE TO anon USING (true);
+  FOR DELETE TO anon
+  USING (
+    registration_id IN (
+      SELECT id FROM registrations
+      WHERE event_date > CURRENT_DATE + interval '5 days'
+        AND edit_token = (current_setting('request.jwt.claims', true)::json->>'edit_token')::uuid
+    )
+  );
 
--- ── 4. Export view (за застрахователя) ───────────────────────────
+-- ── 4. Export view (for the insurer) ─────────────────────────────
+-- NOTE: accessible by service_role only (not anon), as it contains personal ID numbers (EGN).
 CREATE VIEW export_view AS
 SELECT
   r.id            AS ref,
