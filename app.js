@@ -213,14 +213,15 @@ document.getElementById('form').addEventListener('submit', async e => {
 
 // ── Insert ────────────────────────────────────
 async function doInsert() {
-  const regRes = await sb('POST', '/rest/v1/registrations',
-    { event: EV_NAME, event_date: EV_DATE, status: 'pending', notes: v('notes') || null },
-    { 'Prefer': 'return=representation' });
-  if (!regRes.ok) throw new Error((await regRes.json()).message);
-  const [reg] = await regRes.json();
-  const parts = collectParticipants().map(p => ({ ...p, registration_id: reg.id }));
-  const pRes = await sb('POST', '/rest/v1/participants', parts);
-  if (!pRes.ok) throw new Error('Грешка при запис на участниците');
+  const parts = collectParticipants();
+  const res = await sb('POST', '/rest/v1/rpc/create_registration', {
+    p_event:        EV_NAME,
+    p_event_date:   EV_DATE,
+    p_notes:        v('notes') || null,
+    p_participants: parts,
+  });
+  if (!res.ok) throw new Error((await res.json()).message);
+  const reg = await res.json();
 
   await sendConfirmationEmail(reg, parts);
 

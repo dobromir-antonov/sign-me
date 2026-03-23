@@ -261,7 +261,48 @@ GRANT EXECUTE ON FUNCTION public.admin_replace_participants(text, uuid, jsonb) T
 --   DROP POLICY IF EXISTS "anon_select_reg" ON registrations;
 --   DROP POLICY IF EXISTS "anon_update_reg" ON registrations;
 
--- 7a. Load one registration by edit_token — edit_token excluded from response
+-- 7a. Create a new registration + participants atomically.
+--     Returns {id, edit_token, event_date} needed for the confirmation email.
+CREATE OR REPLACE FUNCTION public.create_registration(
+  p_event        text,
+  p_event_date   date,
+  p_notes        text,
+  p_participants jsonb
+)
+RETURNS json
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_reg registrations%ROWTYPE;
+BEGIN
+  INSERT INTO registrations (event, event_date, notes, status)
+  VALUES (p_event, p_event_date, p_notes, 'pending')
+  RETURNING * INTO v_reg;
+
+  INSERT INTO participants (registration_id, is_head, name, egn, birth_date, age, phone, email)
+  SELECT
+    v_reg.id,
+    (elem->>'is_head')::boolean,
+    elem->>'name',
+    elem->>'egn',
+    NULLIF(elem->>'birth_date', '')::date,
+    NULLIF(elem->>'age',        '')::integer,
+    NULLIF(elem->>'phone',      ''),
+    NULLIF(elem->>'email',      '')
+  FROM jsonb_array_elements(p_participants) AS elem;
+
+  RETURN json_build_object(
+    'id',         v_reg.id,
+    'edit_token', v_reg.edit_token,
+    'event_date', v_reg.event_date
+  );
+END;
+$$;
+GRANT EXECUTE ON FUNCTION public.create_registration(text, date, text, jsonb) TO anon;
+
+-- 7b. Load one registration by edit_token — edit_token excluded from response (never sent to client)
 CREATE OR REPLACE FUNCTION public.get_registration_by_token(p_token uuid)
 RETURNS TABLE (
   id         uuid,
