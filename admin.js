@@ -187,6 +187,7 @@ function renderList() {
           <div class="reg-info">
             <strong>${esc(head?.name || '—')}</strong>
             <span class="reg-contact">${esc(head?.email || '')}${head?.phone ? ' · ' + esc(head.phone) : ''}</span>
+            ${reg.notes ? `<span class="reg-notes">${esc(reg.notes)}</span>` : ''}
           </div>
         </div>
         <div class="reg-card-right">
@@ -197,7 +198,6 @@ function renderList() {
         </div>
       </div>
       <div class="reg-card-body" id="body-${reg.id}">
-        ${reg.notes ? `<div class="reg-notes"><strong>Бележки:</strong> ${esc(reg.notes)}</div>` : ''}
         <div class="parts-table-wrap">
           <table class="parts-table">
             <thead>
