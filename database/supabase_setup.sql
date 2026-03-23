@@ -41,17 +41,12 @@ ALTER TABLE participants  ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "anon_insert_reg" ON registrations
   FOR INSERT TO anon WITH CHECK (true);
 
--- SELECT: public read (anon key carries no custom claims, so token-based filtering
--- is not enforceable here — restrict sensitive queries via the service_role key instead)
-CREATE POLICY "anon_select_reg" ON registrations
-  FOR SELECT TO anon USING (true);
+-- SELECT: replaced by get_registration_by_token and admin_get_all_registrations RPCs (section 7).
+-- edit_token is intentionally excluded from all RPC responses.
+-- DROP POLICY IF EXISTS "anon_select_reg" ON registrations;
 
--- UPDATE: only when the event is more than 5 days away
--- (edit_token ownership is validated client-side; JWT claims are unavailable with the anon key)
-CREATE POLICY "anon_update_reg" ON public.registrations
-FOR UPDATE TO anon
-USING (event_date > CURRENT_DATE + interval '5 days')
-WITH CHECK (true);
+-- UPDATE: replaced by set_registration_status_by_token and update_registration_by_token RPCs (section 7).
+-- DROP POLICY IF EXISTS "anon_update_reg" ON registrations;
 
 -- INSERT participants
 CREATE POLICY "anon_insert_par" ON participants
@@ -70,28 +65,6 @@ CREATE POLICY "anon_delete_par" ON participants
       WHERE event_date > CURRENT_DATE + interval '5 days'
     )
   );
-
--- ── 4. Export view (for the insurer) ─────────────────────────────
--- NOTE: accessible by service_role only (not anon), as it contains personal ID numbers (EGN).
-CREATE VIEW export_view AS
-SELECT
-  r.id            AS ref,
-  r.event,
-  r.event_date,
-  r.status,
-  r.created_at,
-  p.is_head,
-  p.name,
-  p.egn,
-  p.birth_date,
-  p.age,
-  p.phone,
-  p.email
-FROM registrations r
-JOIN participants p ON p.registration_id = r.id
-WHERE r.status != 'cancelled'
-ORDER BY r.created_at, p.is_head DESC, p.name;
-
 
 -- ── 5. Participant read RPCs ──────────────────────────────────────
 -- Run this if you already applied the earlier SQL (removes the open policy):
@@ -278,3 +251,131 @@ BEGIN
 END;
 $$;
 GRANT EXECUTE ON FUNCTION public.admin_replace_participants(text, uuid, jsonb) TO anon;
+
+
+-- ── 7. Lock down registrations table ─────────────────────────────
+-- All registration reads and writes now go through SECURITY DEFINER RPCs.
+-- edit_token is never returned to the client after this point.
+--
+-- Run these in SQL Editor if you already applied the earlier sections:
+--   DROP POLICY IF EXISTS "anon_select_reg" ON registrations;
+--   DROP POLICY IF EXISTS "anon_update_reg" ON registrations;
+
+-- 7a. Load one registration by edit_token — edit_token excluded from response
+CREATE OR REPLACE FUNCTION public.get_registration_by_token(p_token uuid)
+RETURNS TABLE (
+  id         uuid,
+  created_at timestamptz,
+  event      text,
+  event_date date,
+  notes      text,
+  status     text
+)
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT r.id, r.created_at, r.event, r.event_date, r.notes, r.status
+  FROM registrations r
+  WHERE r.edit_token = p_token;
+$$;
+GRANT EXECUTE ON FUNCTION public.get_registration_by_token(uuid) TO anon;
+
+-- 7b. Full edit: update notes + replace participants atomically
+--     Supersedes the separate PATCH + replace_participants_by_token calls.
+CREATE OR REPLACE FUNCTION public.update_registration_by_token(
+  p_token        uuid,
+  p_notes        text,
+  p_participants jsonb
+)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_reg_id uuid;
+BEGIN
+  SELECT id INTO v_reg_id
+  FROM registrations
+  WHERE edit_token = p_token
+    AND event_date > CURRENT_DATE + interval '5 days';
+
+  IF v_reg_id IS NULL THEN
+    RAISE EXCEPTION 'Невалиден или изтекъл линк';
+  END IF;
+
+  UPDATE registrations SET notes = p_notes WHERE id = v_reg_id;
+
+  DELETE FROM participants WHERE registration_id = v_reg_id;
+
+  INSERT INTO participants (registration_id, is_head, name, egn, birth_date, age, phone, email)
+  SELECT
+    v_reg_id,
+    (elem->>'is_head')::boolean,
+    elem->>'name',
+    elem->>'egn',
+    NULLIF(elem->>'birth_date', '')::date,
+    NULLIF(elem->>'age',        '')::integer,
+    NULLIF(elem->>'phone',      ''),
+    NULLIF(elem->>'email',      '')
+  FROM jsonb_array_elements(p_participants) AS elem;
+END;
+$$;
+GRANT EXECUTE ON FUNCTION public.update_registration_by_token(uuid, text, jsonb) TO anon;
+
+-- 7c. Confirm or cancel attendance by token
+CREATE OR REPLACE FUNCTION public.set_registration_status_by_token(
+  p_token  uuid,
+  p_status text
+)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_reg_id uuid;
+BEGIN
+  SELECT id INTO v_reg_id
+  FROM registrations
+  WHERE edit_token = p_token;
+
+  IF v_reg_id IS NULL THEN
+    RAISE EXCEPTION 'Невалиден линк';
+  END IF;
+
+  IF p_status NOT IN ('pending', 'confirmed', 'cancelled') THEN
+    RAISE EXCEPTION 'Невалиден статус';
+  END IF;
+
+  UPDATE registrations SET status = p_status WHERE id = v_reg_id;
+END;
+$$;
+GRANT EXECUTE ON FUNCTION public.set_registration_status_by_token(uuid, text) TO anon;
+
+-- 7d. Admin: all registrations — edit_token deliberately excluded
+CREATE OR REPLACE FUNCTION public.admin_get_all_registrations(p_admin_key text)
+RETURNS TABLE (
+  id         uuid,
+  created_at timestamptz,
+  event      text,
+  event_date date,
+  notes      text,
+  status     text
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM admin_keys WHERE key = p_admin_key) THEN
+    RAISE EXCEPTION 'Unauthorized';
+  END IF;
+  RETURN QUERY
+    SELECT r.id, r.created_at, r.event, r.event_date, r.notes, r.status
+    FROM registrations r
+    ORDER BY r.created_at DESC;
+END;
+$$;
+GRANT EXECUTE ON FUNCTION public.admin_get_all_registrations(text) TO anon;

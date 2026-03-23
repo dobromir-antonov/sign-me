@@ -16,7 +16,7 @@ const EV_DEADLINE_BEFORE_DUE_IN_DAYS = 5;
 
 emailjs.init(EJS_PUBLIC_KEY);
 
-const MAX = 14;
+const MAX = 29; // 29 additional + 1 organizer = 30 total
 let uid = 0, editToken = null, editId = null;
 
 // ── Boot ──────────────────────────────────────
@@ -268,14 +268,10 @@ async function sendConfirmationEmail(reg, parts) {
 
 // ── Update ────────────────────────────────────
 async function doUpdate() {
-  const patchRes = await sb('PATCH', `/rest/v1/registrations?id=eq.${editId}`,
-    { event: EV_NAME, event_date: EV_DATE, notes: v('notes') || null });
-  if (!patchRes.ok) throw new Error((await patchRes.json()).message);
-
   const parts = collectParticipants();
-  const rpcRes = await sb('POST', '/rest/v1/rpc/replace_participants_by_token',
-    { p_token: editToken, p_participants: parts });
-  if (!rpcRes.ok) throw new Error((await rpcRes.json()).message);
+  const res = await sb('POST', '/rest/v1/rpc/update_registration_by_token',
+    { p_token: editToken, p_notes: v('notes') || null, p_participants: parts });
+  if (!res.ok) throw new Error((await res.json()).message);
 }
 
 // ── Confirm ───────────────────────────────────
@@ -283,14 +279,16 @@ async function confirmReg() {
   const btn = document.getElementById('btnConfirm');
   btn.disabled = true; btn.textContent = 'Потвърждава се...';
   try {
-    await sb('PATCH', `/rest/v1/registrations?id=eq.${editId}`, { status: 'confirmed' });
+    const res = await sb('POST', '/rest/v1/rpc/set_registration_status_by_token',
+      { p_token: editToken, p_status: 'confirmed' });
+    if (!res.ok) throw new Error((await res.json()).message);
     btn.textContent = '✓ Потвърдено!';
     document.getElementById('statusPill').className = 'status-pill pill-confirmed';
     document.getElementById('statusPill').textContent = '✓ потвърдено';
     document.getElementById('btnCancel')?.remove();
     toast('✓ Участието е потвърдено!', 'success');
-  } catch {
-    toast('Грешка при потвърждаване.', 'error');
+  } catch (e) {
+    toast('Грешка при потвърждаване: ' + e.message, 'error');
     btn.disabled = false; btn.textContent = '✓ Потвърди участието';
   }
 }
@@ -301,15 +299,17 @@ async function cancelReg() {
   const btn = document.getElementById('btnCancel');
   btn.disabled = true; btn.textContent = 'Отказва се...';
   try {
-    await sb('PATCH', `/rest/v1/registrations?id=eq.${editId}`, { status: 'cancelled' });
+    const res = await sb('POST', '/rest/v1/rpc/set_registration_status_by_token',
+      { p_token: editToken, p_status: 'cancelled' });
+    if (!res.ok) throw new Error((await res.json()).message);
     btn.textContent = '✗ Отказано';
     document.getElementById('statusPill').className = 'status-pill pill-cancelled';
     document.getElementById('statusPill').textContent = '✗ отказано';
     document.getElementById('btnConfirm')?.remove();
     document.getElementById('btnSubmit').disabled = true;
     toast('Участието е отказано.', 'error');
-  } catch {
-    toast('Грешка при отказване.', 'error');
+  } catch (e) {
+    toast('Грешка при отказване: ' + e.message, 'error');
     btn.disabled = false; btn.textContent = '✗ Откажи участието';
   }
 }
@@ -318,7 +318,8 @@ async function cancelReg() {
 async function loadReg(token) {
   document.getElementById('overlay').classList.add('show');
   try {
-    const res = await sb('GET', `/rest/v1/registrations?edit_token=eq.${token}&select=*`);
+    const res = await sb('POST', '/rest/v1/rpc/get_registration_by_token', { p_token: token });
+    if (!res.ok) throw new Error('Грешка при зареждане');
     const rows = await res.json();
     if (!rows.length) throw new Error('Невалиден линк.');
     const reg = rows[0];

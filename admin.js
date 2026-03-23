@@ -6,7 +6,7 @@ const SB_ANON_KEY = 'sb_publishable_lWvvvC4styQAak6jqmXk6g_ybaxrLeZ';
 // Event date — used for EGN age calculation
 const EV_DATE = '2026-04-18';
 
-const MAX_PARTICIPANTS = 14;
+const MAX_PARTICIPANTS = 29; // 29 additional + 1 organizer = 30 total
 // ══════════════════════════════════════════════
 
 let adminKey = null;      // set after successful validation
@@ -106,7 +106,7 @@ async function loadAll() {
   showOverlay(true);
   try {
     const [rRes, pRes] = await Promise.all([
-      sbAnon('GET', '/rest/v1/registrations?order=created_at.desc&select=*'),
+      rpc('admin_get_all_registrations', { p_admin_key: adminKey }),
       rpc('admin_get_all_participants', { p_admin_key: adminKey }),
     ]);
     if (!rRes.ok) throw new Error('Грешка при зареждане на записванията');
