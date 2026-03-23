@@ -268,10 +268,14 @@ async function sendConfirmationEmail(reg, parts) {
 
 // ── Update ────────────────────────────────────
 async function doUpdate() {
-  await sb('PATCH', `/rest/v1/registrations?id=eq.${editId}`, { event: EV_NAME, event_date: EV_DATE, notes: v('notes') || null });
-  await sb('DELETE', `/rest/v1/participants?registration_id=eq.${editId}`);
-  const parts = collectParticipants().map(p => ({ ...p, registration_id: editId }));
-  await sb('POST', '/rest/v1/participants', parts);
+  const patchRes = await sb('PATCH', `/rest/v1/registrations?id=eq.${editId}`,
+    { event: EV_NAME, event_date: EV_DATE, notes: v('notes') || null });
+  if (!patchRes.ok) throw new Error((await patchRes.json()).message);
+
+  const parts = collectParticipants();
+  const rpcRes = await sb('POST', '/rest/v1/rpc/replace_participants_by_token',
+    { p_token: editToken, p_participants: parts });
+  if (!rpcRes.ok) throw new Error((await rpcRes.json()).message);
 }
 
 // ── Confirm ───────────────────────────────────
@@ -323,6 +327,7 @@ async function loadReg(token) {
       throw new Error('Линкът е изтекъл.');
     editId = reg.id;
     const pRes = await sb('POST', '/rest/v1/rpc/get_participants_by_token', { p_token: token });
+    if (!pRes.ok) throw new Error('Грешка при зареждане на участниците');
     const parts = await pRes.json();
     fillForm(parts, reg);
     showEditBanner(reg);

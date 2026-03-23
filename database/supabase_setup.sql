@@ -113,7 +113,47 @@ AS $$
 $$;
 GRANT EXECUTE ON FUNCTION public.get_participants_by_token(uuid) TO anon;
 
--- 5b. Admin: returns all participants; validates admin key first.
+-- 5b. Public: atomically replace participants for a registration.
+--     Validates edit_token and the 5-day deadline server-side.
+CREATE OR REPLACE FUNCTION public.replace_participants_by_token(
+  p_token        uuid,
+  p_participants jsonb
+)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_reg_id uuid;
+BEGIN
+  SELECT id INTO v_reg_id
+  FROM registrations
+  WHERE edit_token = p_token
+    AND event_date > CURRENT_DATE + interval '5 days';
+
+  IF v_reg_id IS NULL THEN
+    RAISE EXCEPTION 'Невалиден или изтекъл линк';
+  END IF;
+
+  DELETE FROM participants WHERE registration_id = v_reg_id;
+
+  INSERT INTO participants (registration_id, is_head, name, egn, birth_date, age, phone, email)
+  SELECT
+    v_reg_id,
+    (elem->>'is_head')::boolean,
+    elem->>'name',
+    elem->>'egn',
+    NULLIF(elem->>'birth_date', '')::date,
+    NULLIF(elem->>'age',        '')::integer,
+    NULLIF(elem->>'phone',      ''),
+    NULLIF(elem->>'email',      '')
+  FROM jsonb_array_elements(p_participants) AS elem;
+END;
+$$;
+GRANT EXECUTE ON FUNCTION public.replace_participants_by_token(uuid, jsonb) TO anon;
+
+-- 5c. Admin: returns all participants; validates admin key first.
 CREATE OR REPLACE FUNCTION public.admin_get_all_participants(p_admin_key text)
 RETURNS SETOF participants
 LANGUAGE plpgsql
