@@ -37,38 +37,14 @@ create index IF not exists idx_participants_head on public.participants using bt
 ALTER TABLE registrations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE participants  ENABLE ROW LEVEL SECURITY;
 
--- INSERT: anon users may create a new registration
-CREATE POLICY "anon_insert_reg" ON registrations
-  FOR INSERT TO anon WITH CHECK (true);
-
--- SELECT: replaced by get_registration_by_token and admin_get_all_registrations RPCs (section 7).
--- edit_token is intentionally excluded from all RPC responses.
--- DROP POLICY IF EXISTS "anon_select_reg" ON registrations;
-
--- UPDATE: replaced by set_registration_status_by_token and update_registration_by_token RPCs (section 7).
--- DROP POLICY IF EXISTS "anon_update_reg" ON registrations;
-
--- INSERT participants
-CREATE POLICY "anon_insert_par" ON participants
-  FOR INSERT TO anon WITH CHECK (true);
-
--- SELECT participants: no direct anon access — use RPCs below instead.
--- (dropping the open policy closes the EGN enumeration vector)
-
--- DELETE participants: only for registrations whose event is more than 5 days away
--- (edit_token ownership is validated client-side; JWT claims are unavailable with the anon key)
-CREATE POLICY "anon_delete_par" ON participants
-  FOR DELETE TO anon
-  USING (
-    registration_id IN (
-      SELECT id FROM registrations
-      WHERE event_date > CURRENT_DATE + interval '5 days'
-    )
-  );
+-- All inserts and deletes are handled by SECURITY DEFINER RPCs (sections 5–7).
+-- No direct anon INSERT/DELETE policies — prevents bypassing validation and participant limits.
+-- If you already applied these policies, drop them:
+--   DROP POLICY IF EXISTS "anon_insert_reg" ON registrations;
+--   DROP POLICY IF EXISTS "anon_insert_par" ON participants;
+--   DROP POLICY IF EXISTS "anon_delete_par" ON participants;
 
 -- ── 5. Participant read RPCs ──────────────────────────────────────
--- Run this if you already applied the earlier SQL (removes the open policy):
--- DROP POLICY IF EXISTS "anon_select_par" ON participants;
 
 -- 5a. Public: returns participants only for the registration that owns this edit_token.
 --     Caller must know the token — no token, no data.
@@ -86,47 +62,7 @@ AS $$
 $$;
 GRANT EXECUTE ON FUNCTION public.get_participants_by_token(uuid) TO anon;
 
--- 5b. Public: atomically replace participants for a registration.
---     Validates edit_token and the 5-day deadline server-side.
-CREATE OR REPLACE FUNCTION public.replace_participants_by_token(
-  p_token        uuid,
-  p_participants jsonb
-)
-RETURNS void
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-AS $$
-DECLARE
-  v_reg_id uuid;
-BEGIN
-  SELECT id INTO v_reg_id
-  FROM registrations
-  WHERE edit_token = p_token
-    AND event_date > CURRENT_DATE + interval '5 days';
-
-  IF v_reg_id IS NULL THEN
-    RAISE EXCEPTION 'Невалиден или изтекъл линк';
-  END IF;
-
-  DELETE FROM participants WHERE registration_id = v_reg_id;
-
-  INSERT INTO participants (registration_id, is_head, name, egn, birth_date, age, phone, email)
-  SELECT
-    v_reg_id,
-    (elem->>'is_head')::boolean,
-    elem->>'name',
-    elem->>'egn',
-    NULLIF(elem->>'birth_date', '')::date,
-    NULLIF(elem->>'age',        '')::integer,
-    NULLIF(elem->>'phone',      ''),
-    NULLIF(elem->>'email',      '')
-  FROM jsonb_array_elements(p_participants) AS elem;
-END;
-$$;
-GRANT EXECUTE ON FUNCTION public.replace_participants_by_token(uuid, jsonb) TO anon;
-
--- 5c. Admin: returns all participants; validates admin key first.
+-- 5b. Admin: returns all participants; validates admin key first.
 CREATE OR REPLACE FUNCTION public.admin_get_all_participants(p_admin_key text)
 RETURNS SETOF participants
 LANGUAGE plpgsql
@@ -145,7 +81,7 @@ $$;
 GRANT EXECUTE ON FUNCTION public.admin_get_all_participants(text) TO anon;
 
 
--- ── 6. Admin key table ────────────────────────────────────────────
+-- ── 6. Admin keys + RPC functions ────────────────────────────────
 -- Table is locked down — anon cannot read it directly.
 -- Access is only possible through the SECURITY DEFINER functions below.
 CREATE TABLE public.admin_keys (
@@ -163,8 +99,8 @@ ALTER TABLE admin_keys ENABLE ROW LEVEL SECURITY;
 -- INSERT INTO admin_keys (key, label) VALUES ('paste-uuid-here', 'main admin');
 
 
--- ── 6. Admin RPC functions (SECURITY DEFINER) ─────────────────────
--- These run with elevated privileges but validate the admin key first.
+-- Admin RPC functions (SECURITY DEFINER) —
+-- these run with elevated privileges but validate the admin key first.
 -- The anon key can call them; the admin_keys table remains inaccessible.
 
 -- 6a. Validate key (returns true/false)
@@ -322,8 +258,7 @@ AS $$
 $$;
 GRANT EXECUTE ON FUNCTION public.get_registration_by_token(uuid) TO anon;
 
--- 7b. Full edit: update notes + replace participants atomically
---     Supersedes the separate PATCH + replace_participants_by_token calls.
+-- 7c. Full edit: update notes + replace participants atomically
 CREATE OR REPLACE FUNCTION public.update_registration_by_token(
   p_token        uuid,
   p_notes        text,
@@ -365,7 +300,7 @@ END;
 $$;
 GRANT EXECUTE ON FUNCTION public.update_registration_by_token(uuid, text, jsonb) TO anon;
 
--- 7c. Confirm or cancel attendance by token
+-- 7d. Confirm or cancel attendance by token
 CREATE OR REPLACE FUNCTION public.set_registration_status_by_token(
   p_token  uuid,
   p_status text
@@ -395,7 +330,7 @@ END;
 $$;
 GRANT EXECUTE ON FUNCTION public.set_registration_status_by_token(uuid, text) TO anon;
 
--- 7d. Admin: all registrations — edit_token deliberately excluded
+-- 7e. Admin: all registrations — edit_token deliberately excluded
 CREATE OR REPLACE FUNCTION public.admin_get_all_registrations(p_admin_key text)
 RETURNS TABLE (
   id         uuid,
