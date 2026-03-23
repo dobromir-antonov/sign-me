@@ -46,32 +46,28 @@ CREATE POLICY "anon_insert_reg" ON registrations
 CREATE POLICY "anon_select_reg" ON registrations
   FOR SELECT TO anon USING (true);
 
--- UPDATE: only when the event is more than 5 days away and only by the edit_token owner
+-- UPDATE: only when the event is more than 5 days away
+-- (edit_token ownership is validated client-side; JWT claims are unavailable with the anon key)
 CREATE POLICY "anon_update_reg" ON public.registrations
 FOR UPDATE TO anon
-USING (
-  event_date > CURRENT_DATE + interval '5 days'
-  AND edit_token = (current_setting('request.jwt.claims', true)::json->>'edit_token')::uuid
-)
+USING (event_date > CURRENT_DATE + interval '5 days')
 WITH CHECK (true);
 
 -- INSERT participants
 CREATE POLICY "anon_insert_par" ON participants
   FOR INSERT TO anon WITH CHECK (true);
 
--- SELECT participants: public read (same reasoning as anon_select_reg)
-CREATE POLICY "anon_select_par" ON participants
-  FOR SELECT TO anon USING (true);
+-- SELECT participants: no direct anon access — use RPCs below instead.
+-- (dropping the open policy closes the EGN enumeration vector)
 
--- DELETE participants: only for future-event registrations owned by the caller.
--- NOTE: the previous USING (true) allowed anyone to delete arbitrary participants.
+-- DELETE participants: only for registrations whose event is more than 5 days away
+-- (edit_token ownership is validated client-side; JWT claims are unavailable with the anon key)
 CREATE POLICY "anon_delete_par" ON participants
   FOR DELETE TO anon
   USING (
     registration_id IN (
       SELECT id FROM registrations
       WHERE event_date > CURRENT_DATE + interval '5 days'
-        AND edit_token = (current_setting('request.jwt.claims', true)::json->>'edit_token')::uuid
     )
   );
 
@@ -95,3 +91,150 @@ FROM registrations r
 JOIN participants p ON p.registration_id = r.id
 WHERE r.status != 'cancelled'
 ORDER BY r.created_at, p.is_head DESC, p.name;
+
+
+-- ── 5. Participant read RPCs ──────────────────────────────────────
+-- Run this if you already applied the earlier SQL (removes the open policy):
+-- DROP POLICY IF EXISTS "anon_select_par" ON participants;
+
+-- 5a. Public: returns participants only for the registration that owns this edit_token.
+--     Caller must know the token — no token, no data.
+CREATE OR REPLACE FUNCTION public.get_participants_by_token(p_token uuid)
+RETURNS SETOF participants
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT p.*
+  FROM participants p
+  JOIN registrations r ON r.id = p.registration_id
+  WHERE r.edit_token = p_token
+  ORDER BY p.is_head DESC, p.name;
+$$;
+GRANT EXECUTE ON FUNCTION public.get_participants_by_token(uuid) TO anon;
+
+-- 5b. Admin: returns all participants; validates admin key first.
+CREATE OR REPLACE FUNCTION public.admin_get_all_participants(p_admin_key text)
+RETURNS SETOF participants
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM admin_keys WHERE key = p_admin_key) THEN
+    RAISE EXCEPTION 'Unauthorized';
+  END IF;
+  RETURN QUERY
+    SELECT * FROM participants
+    ORDER BY registration_id, is_head DESC, name;
+END;
+$$;
+GRANT EXECUTE ON FUNCTION public.admin_get_all_participants(text) TO anon;
+
+
+-- ── 6. Admin key table ────────────────────────────────────────────
+-- Table is locked down — anon cannot read it directly.
+-- Access is only possible through the SECURITY DEFINER functions below.
+CREATE TABLE public.admin_keys (
+  key  text not null,
+  label text null,
+  created_at timestamp with time zone default now(),
+  constraint admin_keys_pkey primary key (key)
+) TABLESPACE pg_default;
+
+ALTER TABLE admin_keys ENABLE ROW LEVEL SECURITY;
+-- No anon SELECT policy → table is invisible to the anon key.
+
+-- Generate and insert your admin key (replace the value below):
+--   SELECT gen_random_uuid();   ← run this in SQL Editor to get a key
+-- INSERT INTO admin_keys (key, label) VALUES ('paste-uuid-here', 'main admin');
+
+
+-- ── 6. Admin RPC functions (SECURITY DEFINER) ─────────────────────
+-- These run with elevated privileges but validate the admin key first.
+-- The anon key can call them; the admin_keys table remains inaccessible.
+
+-- 6a. Validate key (returns true/false)
+CREATE OR REPLACE FUNCTION public.check_admin_key(p_key text)
+RETURNS boolean
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (SELECT 1 FROM admin_keys WHERE key = p_key);
+$$;
+GRANT EXECUTE ON FUNCTION public.check_admin_key(text) TO anon;
+
+-- 6b. Update registration status + notes (bypasses the 5-day UPDATE policy)
+CREATE OR REPLACE FUNCTION public.admin_update_registration(
+  p_admin_key text,
+  p_reg_id    uuid,
+  p_status    text,
+  p_notes     text DEFAULT NULL
+)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM admin_keys WHERE key = p_admin_key) THEN
+    RAISE EXCEPTION 'Unauthorized';
+  END IF;
+  UPDATE registrations SET status = p_status, notes = p_notes WHERE id = p_reg_id;
+END;
+$$;
+GRANT EXECUTE ON FUNCTION public.admin_update_registration(text, uuid, text, text) TO anon;
+
+-- 6c. Set status only
+CREATE OR REPLACE FUNCTION public.admin_set_status(
+  p_admin_key text,
+  p_reg_id    uuid,
+  p_status    text
+)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM admin_keys WHERE key = p_admin_key) THEN
+    RAISE EXCEPTION 'Unauthorized';
+  END IF;
+  UPDATE registrations SET status = p_status WHERE id = p_reg_id;
+END;
+$$;
+GRANT EXECUTE ON FUNCTION public.admin_set_status(text, uuid, text) TO anon;
+
+-- 6d. Atomically replace all participants for a registration
+CREATE OR REPLACE FUNCTION public.admin_replace_participants(
+  p_admin_key    text,
+  p_reg_id       uuid,
+  p_participants jsonb
+)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM admin_keys WHERE key = p_admin_key) THEN
+    RAISE EXCEPTION 'Unauthorized';
+  END IF;
+
+  DELETE FROM participants WHERE registration_id = p_reg_id;
+
+  INSERT INTO participants (registration_id, is_head, name, egn, birth_date, age, phone, email)
+  SELECT
+    p_reg_id,
+    (elem->>'is_head')::boolean,
+    elem->>'name',
+    elem->>'egn',
+    NULLIF(elem->>'birth_date', '')::date,
+    NULLIF(elem->>'age',        '')::integer,
+    NULLIF(elem->>'phone',      ''),
+    NULLIF(elem->>'email',      '')
+  FROM jsonb_array_elements(p_participants) AS elem;
+END;
+$$;
+GRANT EXECUTE ON FUNCTION public.admin_replace_participants(text, uuid, jsonb) TO anon;

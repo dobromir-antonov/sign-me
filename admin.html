@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="bg">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Администрация — Записване за Събитие</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preload" as="style"
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@300;400;500&display=swap">
+  <link rel="stylesheet" href="app.css">
+  <link rel="stylesheet" href="admin.css">
+</head>
+
+<body>
+
+  <!-- Password gate -->
+  <div id="gate">
+    <div class="gate-box">
+      <div class="gate-logo">
+        <img src="assets/logo_new.jpg" alt="Лого">
+      </div>
+      <h2>Администрация</h2>
+      <p>Въведи admin ключа за достъп</p>
+      <input type="password" id="gatePass" placeholder="Admin ключ" autocomplete="off">
+      <button id="gateBtn">Влез</button>
+      <span id="gateErr" class="gate-err"></span>
+    </div>
+  </div>
+
+  <!-- Main admin UI -->
+  <div id="adminApp" style="display:none">
+
+    <div class="header">
+      <h1 class="header-title">Администрация</h1>
+      <p class="header-sub">Управление на записванията</p>
+    </div>
+
+    <!-- Stats bar -->
+    <div class="admin-stats">
+      <div class="stat-card">
+        <div class="stat-num" id="statTotal">—</div>
+        <div class="stat-lbl">Записвания</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" id="statParticipants">—</div>
+        <div class="stat-lbl">Участници</div>
+      </div>
+      <div class="stat-card stat-pending">
+        <div class="stat-num" id="statPending">—</div>
+        <div class="stat-lbl">Изчакващи</div>
+      </div>
+      <div class="stat-card stat-confirmed">
+        <div class="stat-num" id="statConfirmed">—</div>
+        <div class="stat-lbl">Потвърдени</div>
+      </div>
+      <div class="stat-card stat-cancelled">
+        <div class="stat-num" id="statCancelled">—</div>
+        <div class="stat-lbl">Отказани</div>
+      </div>
+    </div>
+
+    <div class="admin-container">
+
+      <!-- Filter tabs -->
+      <div class="filter-bar">
+        <div class="filter-tabs">
+          <button class="filter-tab active" data-filter="all">Всички</button>
+          <button class="filter-tab" data-filter="pending">Изчакващи</button>
+          <button class="filter-tab" data-filter="confirmed">Потвърдени</button>
+          <button class="filter-tab" data-filter="cancelled">Отказани</button>
+        </div>
+        <button class="btn-refresh" id="btnRefresh" title="Опресни">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M1.5 1.5A.5.5 0 0 1 2 2v2.5a6 6 0 1 1-.5 2.5.5.5 0 0 1 1 0 5 5 0 1 0 .5-2.5H5a.5.5 0 0 1 0 1H1.5a.5.5 0 0 1-.5-.5V2a.5.5 0 0 1 .5-.5Z"/>
+          </svg>
+          Опресни
+        </button>
+      </div>
+
+      <div id="regList"></div>
+    </div>
+  </div>
+
+  <!-- Edit modal -->
+  <div id="editModal" class="modal-backdrop" style="display:none">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 id="modalTitle">Редакция на записване</h3>
+        <button class="modal-close" id="modalClose">✕</button>
+      </div>
+      <div class="modal-body">
+
+        <!-- Status -->
+        <div class="section">
+          <div class="section-title">Статус</div>
+          <div class="status-select">
+            <button type="button" class="status-btn status-btn-pending" data-status="pending">● Изчаква</button>
+            <button type="button" class="status-btn status-btn-confirmed" data-status="confirmed">✓ Потвърдено</button>
+            <button type="button" class="status-btn status-btn-cancelled" data-status="cancelled">✗ Отказано</button>
+          </div>
+        </div>
+
+        <!-- Organizer -->
+        <div class="section">
+          <div class="section-title">Отговорник на групата</div>
+          <div class="grid-2">
+            <div class="field span-2">
+              <label>Три имена <span class="req">*</span></label>
+              <input name="orgName" placeholder="Иван Петров Иванов" required>
+              <span class="err">Задължително поле</span>
+            </div>
+            <div class="field">
+              <label>Телефон <span class="req">*</span></label>
+              <input name="orgPhone" type="tel" placeholder="+359 88 888 8888" required>
+              <span class="err">Задължително поле</span>
+            </div>
+            <div class="field">
+              <label>Имейл <span class="req">*</span></label>
+              <input name="orgEmail" type="email" placeholder="ivan@example.com" required>
+              <span class="err">Невалиден имейл</span>
+            </div>
+            <div class="field">
+              <label>ЕГН <span class="req">*</span></label>
+              <input name="orgEgn" placeholder="0000000000" maxlength="10"
+                     oninput="adminOnEgn(this,'modalOrgAgeF','modalOrgBirthH')" required>
+              <span class="err">Невалидно ЕГН</span>
+            </div>
+            <div class="field">
+              <label>Години</label>
+              <input id="modalOrgAgeF" readonly placeholder="0 г.">
+              <input type="hidden" id="modalOrgBirthH">
+            </div>
+          </div>
+        </div>
+
+        <!-- Participants -->
+        <div class="section">
+          <div class="section-title">Допълнителни Участници <span class="mute-text">(без отговорника)</span></div>
+          <div class="p-count">Добавени: <strong id="adminPCount">0</strong></div>
+          <div id="adminPList"></div>
+          <button type="button" class="btn-add" id="adminBtnAdd">
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor">
+              <path d="M8 2a.75.75 0 0 1 .75.75v4.5h4.5a.75.75 0 0 1 0 1.5h-4.5v4.5a.75.75 0 0 1-1.5 0v-4.5h-4.5a.75.75 0 0 1 0-1.5h4.5v-4.5A.75.75 0 0 1 8 2Z" />
+            </svg>
+            Добави участник
+          </button>
+        </div>
+
+        <!-- Notes -->
+        <div class="section">
+          <div class="section-title">Бележки</div>
+          <div class="grid-2">
+            <div class="field span-2">
+              <label>Допълнителна информация</label>
+              <textarea name="notes" rows="3" placeholder="допълнителна информация..."></textarea>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-cancel-modal" id="modalCancelBtn">Отказ</button>
+        <button type="button" class="btn-submit" id="modalSaveBtn">💾 Запази промените</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="overlay">
+    <div class="spinner"></div>
+  </div>
+  <div id="toast"></div>
+
+  <script src="admin.js"></script>
+</body>
+
+</html>

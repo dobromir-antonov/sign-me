@@ -322,7 +322,7 @@ async function loadReg(token) {
     if (new Date(reg.event_date) <= cutoff)
       throw new Error('Линкът е изтекъл.');
     editId = reg.id;
-    const pRes = await sb('GET', `/rest/v1/participants?registration_id=eq.${reg.id}&order=is_head.desc,name.asc`);
+    const pRes = await sb('POST', '/rest/v1/rpc/get_participants_by_token', { p_token: token });
     const parts = await pRes.json();
     fillForm(parts, reg);
     showEditBanner(reg);
