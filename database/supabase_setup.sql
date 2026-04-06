@@ -355,3 +355,22 @@ BEGIN
 END;
 $$;
 GRANT EXECUTE ON FUNCTION public.admin_get_all_registrations(text) TO anon;
+
+-- 7f. Admin: fetch edit_token for a single registration (for confirmation email link only)
+CREATE OR REPLACE FUNCTION public.admin_get_edit_token(p_admin_key text, p_reg_id uuid)
+RETURNS text
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE v_token uuid;
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM admin_keys WHERE key = p_admin_key) THEN
+    RAISE EXCEPTION 'Unauthorized';
+  END IF;
+  SELECT edit_token INTO v_token FROM registrations WHERE id = p_reg_id;
+  IF v_token IS NULL THEN RAISE EXCEPTION 'Записването не е намерено'; END IF;
+  RETURN v_token::text;
+END;
+$$;
+GRANT EXECUTE ON FUNCTION public.admin_get_edit_token(text, uuid) TO anon;

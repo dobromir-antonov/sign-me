@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<!--
+  EmailJS Template — Покана за потвърждение на участие
+  ──────────────────────────────────────────────────────
+  Paste the <body> content into the EmailJS template editor (Body → HTML).
+
+  Template variables (all passed from admin.js via emailjs.send):
+    {{to_email}}    — organiser's email address
+    {{to_name}}     — organiser's full name
+    {{event}}       — event name
+    {{event_date}}  — formatted date string (e.g. "18 април 2026 г.")
+    {{total}}       — total participant count (number)
+    {{total_label}} — "участника" / "участник" (grammatical form)
+    {{ref_id}}      — first 8 chars of registration UUID, uppercased
+    {{edit_url}}    — full edit link  https://…?token=…
+    {{deadline}}    — last date to confirm/decline (event_date − 5 days)
+
+  Recommended EmailJS template settings:
+    To:      {{to_email}}
+    Subject: Моля потвърди участието — {{event}} (до {{deadline}})
+-->
+<html lang="bg">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+</head>
+<body style="margin:0;padding:0;background:#f5f4f0;font-family:'Inter',Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="padding:32px 14px;">
+<tr><td align="center">
+<table width="580" cellpadding="0" cellspacing="0"
+  style="background:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,.08);border:1px solid #ddd9d0;">
+
+  <!-- Header -->
+  <tr><td style="background:#3a6b3a;padding:36px 32px;text-align:center;">
+    <div style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.65);font-weight:300;margin-bottom:8px;">
+      Покана за потвърждение</div>
+    <div style="font-family:'Playfair Display',Georgia,serif;font-size:24px;font-weight:700;color:#ffffff;letter-spacing:.02em;">{{event}}</div>
+    <div style="font-size:12px;color:rgba(255,255,255,.7);margin-top:6px;font-weight:300;">{{event_date}}</div>
+  </td></tr>
+
+  <!-- Body -->
+  <tr><td style="padding:28px 32px;">
+
+    <p style="margin:0 0 8px;color:#1a1f17;font-size:15px;">
+      Здравей, <strong style="font-weight:600;">{{to_name}}</strong>,
+    </p>
+    <p style="margin:0 0 24px;color:#6b7468;font-size:13px;line-height:1.6;">
+      Записани сте с <strong style="color:#1a1f17;">{{total}} {{total_label}}</strong> за събитието.<br/>
+      Потвърдете или откажете участието си преди <strong style="color:#1a1f17;">{{deadline}}</strong>.<br/>
+      Референтен номер:
+      <span style="background:#f5f4f0;padding:2px 7px;border-radius:4px;font-family:monospace;font-size:11px;color:#6b7468;border:1px solid #ddd9d0;">{{ref_id}}</span>
+    </p>
+
+    <!-- Deadline notice -->
+    <div style="background:#fff8e7;border:1px solid #f6d860;border-radius:6px;padding:14px 18px;margin-bottom:24px;">
+      <div style="font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#92400e;font-weight:600;margin-bottom:6px;">
+        Краен срок за отговор
+      </div>
+      <div style="font-size:13px;color:#92400e;font-weight:600;">
+        {{deadline}}
+      </div>
+    </div>
+
+    <!-- CTA -->
+    <div style="background:#edf4ed;border:1px solid #a8c9a8;border-radius:6px;padding:16px 18px;margin-bottom:24px;">
+      <div style="font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#3a6b3a;font-weight:600;margin-bottom:6px;">
+        Действие
+      </div>
+      <div style="font-size:12px;color:#6b7468;margin-bottom:14px;line-height:1.6;">
+        Отвори линка по-долу, за да потвърдиш или откажеш участието.
+        Там можеш и да редактираш данните на участниците.
+      </div>
+      <a href="{{edit_url}}"
+        style="display:inline-block;background:#3a6b3a;color:#ffffff;padding:10px 20px;
+               border-radius:6px;text-decoration:none;font-size:12px;font-weight:600;
+               letter-spacing:.03em;">
+        Потвърди или откажи участието →
+      </a>
+    </div>
+
+    <p style="margin:0;font-size:11px;color:#9ba89a;line-height:1.6;">
+      Ако не си попълвал/а тази форма — игнорирай имейла.
+    </p>
+  </td></tr>
+
+  <!-- Footer -->
+  <tr><td style="background:#f9f8f5;padding:14px 32px;border-top:1px solid #e8e5de;
+                 text-align:center;font-size:10px;color:#9ba89a;letter-spacing:.05em;">
+    {{event}} &middot; {{event_date}} &middot; краен срок {{deadline}}
+  </td></tr>
+
+</table></td></tr></table>
+</body>
+</html>

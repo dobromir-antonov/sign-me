@@ -7,7 +7,15 @@ const SB_ANON_KEY = 'sb_publishable_lWvvvC4styQAak6jqmXk6g_ybaxrLeZ';
 const EV_DATE = '2026-04-18';
 
 const MAX_PARTICIPANTS = 29; // 29 additional + 1 organizer = 30 total
+
+// EmailJS — same account as app.js
+const EJS_PUBLIC_KEY          = 'FV8LtsF3pGNr_6Jqo';
+const EJS_SERVICE_ID          = 'srv-spasiteli.na.pohod';
+const EJS_CONFIRM_TEMPLATE_ID = 'tmp.confirm.request';
+const EJS_DEADLINE_DAYS       = 5;
 // ══════════════════════════════════════════════
+
+emailjs.init(EJS_PUBLIC_KEY);
 
 let adminKey = null;      // set after successful validation
 let allRegs = [];
@@ -178,6 +186,8 @@ function renderList() {
       ? `<button class="btn-action btn-action-cancel" onclick="setStatus('${reg.id}','cancelled')">✗ Откажи</button>` : '';
     const actionPending = reg.status !== 'pending'
       ? `<button class="btn-action btn-action-pending" onclick="setStatus('${reg.id}','pending')">↺ Изчаква</button>` : '';
+    const actionSendEmail =
+      `<button class="btn-action btn-action-email" onclick="sendConfirmationRequest('${reg.id}')">✉ Изпрати покана</button>`;
 
     return `
     <div class="reg-card" data-id="${reg.id}" data-status="${reg.status}">
@@ -211,6 +221,7 @@ function renderList() {
           ${actionConfirm}
           ${actionCancel}
           ${actionPending}
+          ${actionSendEmail}
         </div>
       </div>
     </div>`;
@@ -523,4 +534,45 @@ function toast(msg, type = '') {
   t.textContent = msg;
   t.className = `show ${type}`;
   setTimeout(() => { t.className = ''; }, 4500);
+}
+
+// ── Send confirmation request email ──────────────────────────
+function fmtDateBg(iso) {
+  return new Date(iso).toLocaleDateString('bg-BG', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+async function sendConfirmationRequest(regId) {
+  const reg  = allRegs.find(r => r.id === regId);
+  if (!reg) { toast('Записването не е намерено.', 'error'); return; }
+  const parts = allParts.filter(p => p.registration_id === regId);
+  const head  = parts.find(p => p.is_head) || parts[0];
+  if (!head?.email) { toast('Организаторът няма имейл адрес.', 'error'); return; }
+
+  showOverlay(true);
+  try {
+    const tokenRes = await rpc('admin_get_edit_token', { p_admin_key: adminKey, p_reg_id: regId });
+    if (!tokenRes.ok) throw new Error((await tokenRes.json())?.message || 'Грешка при вземане на токен');
+    const editToken = await tokenRes.json();
+
+    const total      = parts.length;
+    const totalLabel = total !== 1 ? 'участника' : 'участник';
+    const evFmt      = fmtDateBg(reg.event_date);
+    const dlDate     = new Date(reg.event_date);
+    dlDate.setDate(dlDate.getDate() - EJS_DEADLINE_DAYS);
+    const deadline   = fmtDateBg(dlDate.toISOString().slice(0, 10));
+    const refId      = reg.id.slice(0, 8).toUpperCase();
+    const editUrl    = `${location.origin}/index.html?token=${editToken}`;
+
+    await emailjs.send(EJS_SERVICE_ID, EJS_CONFIRM_TEMPLATE_ID, {
+      to_email: head.email, to_name: head.name,
+      event: reg.event, event_date: evFmt,
+      total, total_label: totalLabel,
+      ref_id: refId, edit_url: editUrl, deadline,
+    });
+    toast(`✓ Покана изпратена до ${head.email}`, 'success');
+  } catch (e) {
+    toast('Грешка при изпращане: ' + e.message, 'error');
+  } finally {
+    showOverlay(false);
+  }
 }
