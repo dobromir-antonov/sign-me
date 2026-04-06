@@ -11,6 +11,7 @@ const EJS_TEMPLATE_ID = 'tmp-event.reg.confirm';          // Email Templates →
 // Event
 const EV_NAME = 'Благотворителен исторически поход „По стъпките на Караджов"';
 const EV_DATE = '2026-04-18';                 // YYYY-MM-DD
+const EV_FEE = '20 евро (възрастен) / 10 евро (до 18г)';              
 const EV_DEADLINE_BEFORE_DUE_IN_DAYS = 5;                
 // ══════════════════════════════════════════════
 
@@ -23,6 +24,7 @@ let uid = 0, editToken = null, editId = null;
 addEventListener('DOMContentLoaded', async () => {
   document.getElementById('evName').textContent = EV_NAME;
   document.getElementById('evDate').textContent = fmt(EV_DATE);
+  document.getElementById('evFee').textContent = EV_FEE;
   const token = new URLSearchParams(location.search).get('token');
   if (token) { editToken = token; await loadReg(token); }
 });
