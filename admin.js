@@ -194,6 +194,8 @@ function renderList() {
       ? `<button class="btn-action btn-action-pending" onclick="setStatus('${reg.id}','pending')">↺ Изчаква</button>` : '';
     const actionSendEmail =
       `<button class="btn-action btn-action-email" onclick="sendConfirmationRequest('${reg.id}')">✉ Изпрати покана</button>`;
+    const actionDelete =
+      `<button class="btn-action btn-action-delete" onclick="deleteReg('${reg.id}')">🗑 Изтрий</button>`;
 
     return `
     <div class="reg-card" data-id="${reg.id}" data-status="${reg.status}">
@@ -228,6 +230,7 @@ function renderList() {
           ${actionCancel}
           ${actionPending}
           ${actionSendEmail}
+          ${actionDelete}
         </div>
       </div>
     </div>`;
@@ -252,6 +255,29 @@ function toggleCard(id) {
 
 function esc(str) {
   return String(str ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+// ── Delete registration ───────────────────────
+async function deleteReg(id) {
+  const reg = allRegs.find(r => r.id === id);
+  const head = allParts.find(p => p.registration_id === id && p.is_head);
+  const name = head?.name || reg?.id?.slice(0, 8).toUpperCase() || id;
+  if (!confirm(`Изтриване на записването на „${name}" и всички участници?\nТова действие е необратимо.`)) return;
+
+  showOverlay(true);
+  try {
+    const res = await rpc('admin_delete_registration', { p_admin_key: adminKey, p_reg_id: id });
+    if (!res.ok) throw new Error((await res.json())?.message || 'Грешка');
+    allRegs  = allRegs.filter(r => r.id !== id);
+    allParts = allParts.filter(p => p.registration_id !== id);
+    renderStats();
+    renderList();
+    toast('Записването е изтрито.', 'error');
+  } catch (e) {
+    toast('Грешка: ' + e.message, 'error');
+  } finally {
+    showOverlay(false);
+  }
 }
 
 // ── Set status (via RPC) ──────────────────────

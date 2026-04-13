@@ -356,6 +356,25 @@ END;
 $$;
 GRANT EXECUTE ON FUNCTION public.admin_get_all_registrations(text) TO anon;
 
+-- 7e-2. Admin: delete a registration and all its participants (CASCADE handles participants)
+CREATE OR REPLACE FUNCTION public.admin_delete_registration(
+  p_admin_key text,
+  p_reg_id    uuid
+)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM admin_keys WHERE key = p_admin_key) THEN
+    RAISE EXCEPTION 'Unauthorized';
+  END IF;
+  DELETE FROM registrations WHERE id = p_reg_id;
+END;
+$$;
+GRANT EXECUTE ON FUNCTION public.admin_delete_registration(text, uuid) TO anon;
+
 -- 7f. Admin: fetch edit_token for a single registration (for confirmation email link only)
 CREATE OR REPLACE FUNCTION public.admin_get_edit_token(p_admin_key text, p_reg_id uuid)
 RETURNS text

@@ -568,6 +568,17 @@
   background: #eff6ff;
 }
 
+.btn-action-delete {
+  background: var(--surface);
+  border-color: var(--danger);
+  color: var(--danger);
+  margin-left: auto;
+}
+
+.btn-action-delete:hover {
+  background: var(--danger-bg);
+}
+
 /* ── Empty state ── */
 .empty-state {
   text-align: center;
