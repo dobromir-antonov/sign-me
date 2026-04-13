@@ -24,7 +24,7 @@ let uid = 0, editToken = null, editId = null;
 addEventListener('DOMContentLoaded', async () => {
   document.getElementById('evName').textContent = EV_NAME;
   document.getElementById('evDate').textContent = fmt(EV_DATE);
-  document.getElementById('evFee').textContent = EV_FEE;
+  // document.getElementById('evFee').textContent = EV_FEE;
   const token = new URLSearchParams(location.search).get('token');
   if (token) { editToken = token; await loadReg(token); }
 });
