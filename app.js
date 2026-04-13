@@ -11,20 +11,24 @@ const EJS_TEMPLATE_ID = 'tmp-event.reg.confirm';          // Email Templates →
 // Event
 const EV_NAME = 'Благотворителен исторически поход „По стъпките на Караджов"';
 const EV_DATE = '2026-04-18';                 // YYYY-MM-DD
-const EV_FEE = '20 евро (възрастен) / 10 евро (до 18г)';              
-const EV_DEADLINE_BEFORE_DUE_IN_DAYS = 5;                
+const EV_FEE = '20 евро (възрастен) / 10 евро (до 18г)';
 // ══════════════════════════════════════════════
 
 emailjs.init(EJS_PUBLIC_KEY);
 
 const MAX = 29; // 29 additional + 1 organizer = 30 total
 let uid = 0, editToken = null, editId = null;
+let editCutoff = null; // loaded from DB on boot
 
 // ── Boot ──────────────────────────────────────
 addEventListener('DOMContentLoaded', async () => {
   document.getElementById('evName').textContent = EV_NAME;
   document.getElementById('evDate').textContent = fmt(EV_DATE);
   // document.getElementById('evFee').textContent = EV_FEE;
+  try {
+    const cutoffRes = await sb('POST', '/rest/v1/rpc/get_edit_cutoff', {});
+    if (cutoffRes.ok) { const v = await cutoffRes.json(); if (v) editCutoff = new Date(v); }
+  } catch (_) { /* non-fatal: cutoff check falls through to server-side enforcement */ }
   const token = new URLSearchParams(location.search).get('token');
   if (token) { editToken = token; await loadReg(token); }
 });
@@ -239,9 +243,7 @@ async function sendConfirmationEmail(reg, parts) {
   const total = parts.length;
   const evFmt = fmt(reg.event_date);
   const editUrl = `${location.origin}${location.pathname}?token=${reg.edit_token}`;
-  const deadlineDate = new Date(reg.event_date); 
-  deadlineDate.setDate(deadlineDate.getDate() - EV_DEADLINE_BEFORE_DUE_IN_DAYS);
-  const editDeadline = fmt(deadlineDate.toISOString().slice(0, 10));
+  const editDeadline = editCutoff ? fmtDateTime(editCutoff) : '—';
   const refId = reg.id.slice(0, 8).toUpperCase();
   const totalLabel = total !== 1 ? 'участника' : 'участник';
 
@@ -326,8 +328,7 @@ async function loadReg(token) {
     const rows = await res.json();
     if (!rows.length) throw new Error('Невалиден линк.');
     const reg = rows[0];
-    const cutoff = new Date(); cutoff.setDate(cutoff.getDate() + 5);
-    if (new Date(reg.event_date) <= cutoff)
+    if (editCutoff && new Date() >= editCutoff)
       throw new Error('Линкът е изтекъл.');
     editId = reg.id;
     const pRes = await sb('POST', '/rest/v1/rpc/get_participants_by_token', { p_token: token });
@@ -363,8 +364,9 @@ function fillForm(parts, reg) {
 function showEditBanner(reg) {
   document.getElementById('heroSub').textContent = 'Редакция на записване';
   document.getElementById('editBanner').classList.add('show');
-  const deadline = new Date(reg.event_date); deadline.setDate(deadline.getDate() - 5);
-  document.getElementById('editDetail').textContent = `Редакцията е възможна до ${fmt(deadline.toISOString().slice(0, 10))}.`;
+  document.getElementById('editDetail').textContent = editCutoff
+    ? `Редакцията е възможна до ${fmtDateTime(editCutoff)}.`
+    : '';
   if (reg.status === 'confirmed') {
     document.getElementById('statusPill').className = 'status-pill pill-confirmed';
     document.getElementById('statusPill').textContent = '✓ потвърдено';
@@ -392,6 +394,11 @@ function sb(method, path, body, extra = {}) {
 }
 function set(name, val) { const el = document.querySelector(`[name = ${name}]`); if (el) el.value = val || ''; }
 function fmt(iso) { return new Date(iso).toLocaleDateString('bg-BG', { day: 'numeric', month: 'long', year: 'numeric' }); }
+function fmtDateTime(dt) {
+  const d = new Date(dt);
+  return d.toLocaleDateString('bg-BG', { day: 'numeric', month: 'long', year: 'numeric' })
+    + ' ' + d.toLocaleTimeString('bg-BG', { hour: '2-digit', minute: '2-digit' });
+}
 function toast(msg, type = '') {
   const t = document.getElementById('toast');
   t.textContent = msg; t.className = `show ${type}`;

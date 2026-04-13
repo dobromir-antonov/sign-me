@@ -37,6 +37,18 @@
       <p class="header-sub">Управление на записванията</p>
     </div>
 
+    <!-- Settings bar -->
+    <div class="admin-settings-bar">
+      <span class="settings-label">Краен срок за редакция:</span>
+      <span id="cutoffDisplay" class="cutoff-value">—</span>
+      <button class="btn-cutoff-edit" id="btnEditCutoff">Промени</button>
+      <div id="cutoffForm" class="cutoff-form" style="display:none">
+        <input type="datetime-local" id="cutoffInput" step="1">
+        <button class="btn-cutoff-save" id="btnSaveCutoff">Запази</button>
+        <button class="btn-cutoff-cancel" id="btnCancelCutoff">Отказ</button>
+      </div>
+    </div>
+
     <!-- Stats bar -->
     <div class="admin-stats">
       <div class="stat-card">

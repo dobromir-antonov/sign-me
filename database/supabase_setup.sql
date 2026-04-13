@@ -374,3 +374,121 @@ BEGIN
 END;
 $$;
 GRANT EXECUTE ON FUNCTION public.admin_get_edit_token(text, uuid) TO anon;
+
+
+-- ── 8. Edit-cutoff settings ───────────────────────────────────────────
+-- Single-row table that stores the explicit datetime after which
+-- organizers can no longer edit their registrations.
+-- Protected by RLS — only accessible through SECURITY DEFINER RPCs.
+
+CREATE TABLE IF NOT EXISTS public.settings (
+  id          integer    PRIMARY KEY DEFAULT 1,
+  edit_cutoff timestamptz NOT NULL,
+  CONSTRAINT  settings_single_row CHECK (id = 1)
+) TABLESPACE pg_default;
+
+ALTER TABLE settings ENABLE ROW LEVEL SECURITY;
+-- No anon SELECT policy → table is invisible to the anon key.
+
+-- Seed with a sensible default (adjust as needed before first use).
+-- Always use UTC for the literal, or supply an explicit offset so PostgreSQL
+-- converts to UTC on insert. timestamptz is stored as UTC internally.
+-- Example: 2026-04-13 23:59:59 Sofia (UTC+3) = 2026-04-13 20:59:59 UTC
+INSERT INTO settings (id, edit_cutoff)
+VALUES (1, '2026-04-13 20:59:59Z')
+ON CONFLICT (id) DO NOTHING;
+
+-- 8a. Public: return the current edit cutoff (no auth — organizers need this to check expiry)
+CREATE OR REPLACE FUNCTION public.get_edit_cutoff()
+RETURNS timestamptz
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT edit_cutoff FROM settings WHERE id = 1;
+$$;
+GRANT EXECUTE ON FUNCTION public.get_edit_cutoff() TO anon;
+
+-- 8b. Admin: return full settings object
+CREATE OR REPLACE FUNCTION public.admin_get_settings(p_admin_key text)
+RETURNS json
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE v_cutoff timestamptz;
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM admin_keys WHERE key = p_admin_key) THEN
+    RAISE EXCEPTION 'Unauthorized';
+  END IF;
+  SELECT edit_cutoff INTO v_cutoff FROM settings WHERE id = 1;
+  RETURN json_build_object('edit_cutoff', v_cutoff);
+END;
+$$;
+GRANT EXECUTE ON FUNCTION public.admin_get_settings(text) TO anon;
+
+-- 8c. Admin: update the edit cutoff
+CREATE OR REPLACE FUNCTION public.admin_set_cutoff(p_admin_key text, p_cutoff timestamptz)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM admin_keys WHERE key = p_admin_key) THEN
+    RAISE EXCEPTION 'Unauthorized';
+  END IF;
+  UPDATE settings SET edit_cutoff = p_cutoff WHERE id = 1;
+END;
+$$;
+GRANT EXECUTE ON FUNCTION public.admin_set_cutoff(text, timestamptz) TO anon;
+
+-- 8d. Replace the hardcoded 5-day guard in update_registration_by_token
+--     with a check against the settings table.
+CREATE OR REPLACE FUNCTION public.update_registration_by_token(
+  p_token        uuid,
+  p_notes        text,
+  p_participants jsonb
+)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_reg_id  uuid;
+  v_cutoff  timestamptz;
+BEGIN
+  SELECT id INTO v_reg_id
+  FROM registrations
+  WHERE edit_token = p_token;
+
+  IF v_reg_id IS NULL THEN
+    RAISE EXCEPTION 'Невалиден или изтекъл линк';
+  END IF;
+
+  SELECT edit_cutoff INTO v_cutoff FROM settings WHERE id = 1;
+  -- If settings row is missing, v_cutoff is NULL → IS NOT NULL check skips the block safely.
+  -- This is intentional fail-open: a missing settings row should not lock out all edits.
+  IF v_cutoff IS NOT NULL AND NOW() >= v_cutoff THEN
+    RAISE EXCEPTION 'Линкът е изтекъл';
+  END IF;
+
+  UPDATE registrations SET notes = p_notes WHERE id = v_reg_id;
+
+  DELETE FROM participants WHERE registration_id = v_reg_id;
+
+  INSERT INTO participants (registration_id, is_head, name, egn, birth_date, age, phone, email)
+  SELECT
+    v_reg_id,
+    (elem->>'is_head')::boolean,
+    elem->>'name',
+    elem->>'egn',
+    NULLIF(elem->>'birth_date', '')::date,
+    NULLIF(elem->>'age',        '')::integer,
+    NULLIF(elem->>'phone',      ''),
+    NULLIF(elem->>'email',      '')
+  FROM jsonb_array_elements(p_participants) AS elem;
+END;
+$$;
+GRANT EXECUTE ON FUNCTION public.update_registration_by_token(uuid, text, jsonb) TO anon;

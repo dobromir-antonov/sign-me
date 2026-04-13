@@ -12,7 +12,6 @@ const MAX_PARTICIPANTS = 29; // 29 additional + 1 organizer = 30 total
 const EJS_PUBLIC_KEY          = 'FV8LtsF3pGNr_6Jqo';
 const EJS_SERVICE_ID          = 'srv-spasiteli.na.pohod';
 const EJS_CONFIRM_TEMPLATE_ID = 'tmp.confirm.request';
-const EJS_DEADLINE_DAYS       = 5;
 // ══════════════════════════════════════════════
 
 emailjs.init(EJS_PUBLIC_KEY);
@@ -24,6 +23,7 @@ let activeFilter = 'all';
 let adminUid = 0;
 let currentEditId = null;
 let currentEditStatus = null;
+let editCutoff = null; // loaded from DB after login
 
 // ── Boot ──────────────────────────────────────
 addEventListener('DOMContentLoaded', () => {
@@ -113,14 +113,20 @@ function rpc(name, params) {
 async function loadAll() {
   showOverlay(true);
   try {
-    const [rRes, pRes] = await Promise.all([
+    const [rRes, pRes, sRes] = await Promise.all([
       rpc('admin_get_all_registrations', { p_admin_key: adminKey }),
       rpc('admin_get_all_participants', { p_admin_key: adminKey }),
+      rpc('admin_get_settings', { p_admin_key: adminKey }),
     ]);
     if (!rRes.ok) throw new Error('Грешка при зареждане на записванията');
     if (!pRes.ok) throw new Error('Грешка при зареждане на участниците');
     allRegs = await rRes.json();
     allParts = await pRes.json();
+    if (sRes.ok) {
+      const settings = await sRes.json();
+      if (settings?.edit_cutoff) editCutoff = new Date(settings.edit_cutoff);
+      displayCutoff();
+    }
     renderStats();
     renderList();
   } catch (e) {
@@ -541,6 +547,12 @@ function fmtDateBg(iso) {
   return new Date(iso).toLocaleDateString('bg-BG', { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
+function fmtDateTimeBg(dt) {
+  const d = new Date(dt);
+  return d.toLocaleDateString('bg-BG', { day: 'numeric', month: 'long', year: 'numeric' })
+    + ' ' + d.toLocaleTimeString('bg-BG', { hour: '2-digit', minute: '2-digit' });
+}
+
 async function sendConfirmationRequest(regId) {
   const reg  = allRegs.find(r => r.id === regId);
   if (!reg) { toast('Записването не е намерено.', 'error'); return; }
@@ -557,9 +569,7 @@ async function sendConfirmationRequest(regId) {
     const total      = parts.length;
     const totalLabel = total !== 1 ? 'участника' : 'участник';
     const evFmt      = fmtDateBg(reg.event_date);
-    const dlDate     = new Date(reg.event_date);
-    dlDate.setDate(dlDate.getDate() - EJS_DEADLINE_DAYS);
-    const deadline   = fmtDateBg(dlDate.toISOString().slice(0, 10));
+    const deadline   = editCutoff ? fmtDateTimeBg(editCutoff) : '—';
     const refId      = reg.id.slice(0, 8).toUpperCase();
     const editUrl    = `${location.origin}/index.html?token=${editToken}`;
 
@@ -576,3 +586,48 @@ async function sendConfirmationRequest(regId) {
     showOverlay(false);
   }
 }
+
+// ── Cutoff settings ───────────────────────────
+function toDatetimeLocalValue(dt) {
+  const d = new Date(dt);
+  const pad = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
+
+function displayCutoff() {
+  document.getElementById('cutoffDisplay').textContent = editCutoff ? fmtDateTimeBg(editCutoff) : '—';
+}
+
+document.getElementById('btnEditCutoff').addEventListener('click', () => {
+  document.getElementById('cutoffInput').value = editCutoff ? toDatetimeLocalValue(editCutoff) : '';
+  document.getElementById('cutoffForm').style.display = '';
+  document.getElementById('btnEditCutoff').style.display = 'none';
+});
+
+document.getElementById('btnCancelCutoff').addEventListener('click', () => {
+  document.getElementById('cutoffForm').style.display = 'none';
+  document.getElementById('btnEditCutoff').style.display = '';
+});
+
+document.getElementById('btnSaveCutoff').addEventListener('click', async () => {
+  const val = document.getElementById('cutoffInput').value;
+  if (!val) { toast('Избери дата и час', 'error'); return; }
+  const newCutoff = new Date(val);
+  if (isNaN(newCutoff.getTime())) { toast('Невалидна дата', 'error'); return; }
+
+  const btn = document.getElementById('btnSaveCutoff');
+  btn.disabled = true; btn.textContent = 'Записва се...';
+  try {
+    const res = await rpc('admin_set_cutoff', { p_admin_key: adminKey, p_cutoff: newCutoff.toISOString() });
+    if (!res.ok) throw new Error((await res.json())?.message || 'Грешка');
+    editCutoff = newCutoff;
+    displayCutoff();
+    document.getElementById('cutoffForm').style.display = 'none';
+    document.getElementById('btnEditCutoff').style.display = '';
+    toast('✓ Крайният срок е обновен.', 'success');
+  } catch (e) {
+    toast('Грешка: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Запази';
+  }
+});

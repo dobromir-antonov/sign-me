@@ -87,6 +87,105 @@
   min-height: 1em;
 }
 
+/* ── Settings bar ── */
+.admin-settings-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 10px 20px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  font-size: .82rem;
+}
+
+.settings-label {
+  color: var(--text-dim);
+  font-weight: 500;
+}
+
+.cutoff-value {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.btn-cutoff-edit {
+  padding: 5px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-dim);
+  font-family: 'Inter', sans-serif;
+  font-size: .76rem;
+  cursor: pointer;
+  transition: all .15s;
+}
+
+.btn-cutoff-edit:hover {
+  border-color: var(--green-dim);
+  color: var(--green);
+  background: var(--green-bg);
+}
+
+.cutoff-form {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+}
+
+.cutoff-form input[type="datetime-local"] {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-family: 'Inter', sans-serif;
+  font-size: .82rem;
+  color: var(--text);
+  outline: none;
+  transition: border-color .15s;
+  flex: 1 1 auto;
+}
+
+.cutoff-form input[type="datetime-local"]:focus {
+  border-color: var(--green);
+  box-shadow: 0 0 0 3px rgba(58, 107, 58, .1);
+}
+
+.btn-cutoff-save {
+  padding: 6px 14px;
+  background: var(--green);
+  border: none;
+  border-radius: 6px;
+  color: #fff;
+  font-family: 'Inter', sans-serif;
+  font-size: .78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s;
+}
+
+.btn-cutoff-save:hover { background: #2e5630; }
+.btn-cutoff-save:disabled { opacity: .6; cursor: not-allowed; }
+
+.btn-cutoff-cancel {
+  padding: 6px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-dim);
+  font-family: 'Inter', sans-serif;
+  font-size: .78rem;
+  cursor: pointer;
+  transition: all .15s;
+}
+
+.btn-cutoff-cancel:hover {
+  border-color: var(--text-dim);
+  color: var(--text);
+}
+
 /* ── Stats bar ── */
 .admin-stats {
   display: flex;
