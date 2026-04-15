@@ -211,8 +211,14 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 DECLARE
-  v_reg registrations%ROWTYPE;
+  v_reg    registrations%ROWTYPE;
+  v_cutoff timestamptz;
 BEGIN
+  SELECT edit_cutoff INTO v_cutoff FROM settings WHERE id = 1;
+  IF v_cutoff IS NOT NULL AND NOW() >= v_cutoff THEN
+    RAISE EXCEPTION 'Записването е приключило';
+  END IF;
+
   INSERT INTO registrations (event, event_date, notes, status)
   VALUES (p_event, p_event_date, p_notes, 'pending')
   RETURNING * INTO v_reg;

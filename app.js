@@ -27,10 +27,23 @@ addEventListener('DOMContentLoaded', async () => {
   // document.getElementById('evFee').textContent = EV_FEE;
   try {
     const cutoffRes = await sb('POST', '/rest/v1/rpc/get_edit_cutoff', {});
-    if (cutoffRes.ok) { const v = await cutoffRes.json(); if (v) editCutoff = new Date(v); }
+    if (cutoffRes.ok) {
+      const v = await cutoffRes.json();
+      if (v) editCutoff = new Date(v);
+    }
   } catch (_) { /* non-fatal: cutoff check falls through to server-side enforcement */ }
+
   const token = new URLSearchParams(location.search).get('token');
-  if (token) { editToken = token; await loadReg(token); }
+  if (token) {
+    editToken = token;
+    await loadReg(token);
+  }
+  else if (editCutoff && new Date() >= editCutoff) {
+    document.getElementById('closedBanner').style.display = 'flex';
+    document.getElementById('closedDetail').textContent =
+      `Записването приключи на ${fmtDateTime(editCutoff)}`;
+    document.getElementById('form').style.display = 'none';
+  }
 });
 
 // ── EGN ───────────────────────────────────────
@@ -219,11 +232,12 @@ document.getElementById('form').addEventListener('submit', async e => {
 
 // ── Insert ────────────────────────────────────
 async function doInsert() {
+  if (editCutoff && new Date() >= editCutoff) throw new Error('Записването е приключило.');
   const parts = collectParticipants();
   const res = await sb('POST', '/rest/v1/rpc/create_registration', {
-    p_event:        EV_NAME,
-    p_event_date:   EV_DATE,
-    p_notes:        v('notes') || null,
+    p_event: EV_NAME,
+    p_event_date: EV_DATE,
+    p_notes: v('notes') || null,
     p_participants: parts,
   });
   if (!res.ok) throw new Error((await res.json()).message);
