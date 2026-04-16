@@ -517,3 +517,27 @@ BEGIN
 END;
 $$;
 GRANT EXECUTE ON FUNCTION public.update_registration_by_token(uuid, text, jsonb) TO anon;
+
+
+-- final list / summary
+CREATE OR REPLACE VIEW public.confirmed_registrations_summary AS
+SELECT 
+    p.name, 
+    COALESCE(p.phone, '') AS phone, 
+    COALESCE(r.notes, '') AS notes,
+    DENSE_RANK() OVER (ORDER BY head.name) AS registration_group_rank
+FROM public.registrations r
+INNER JOIN public.participants p 
+    ON p.registration_id = r.id
+LEFT JOIN LATERAL (
+    SELECT name 
+    FROM public.participants 
+    WHERE registration_id = r.id 
+      AND is_head = true 
+    LIMIT 1
+) head ON TRUE
+WHERE r.status = 'confirmed'
+ORDER BY 
+    head.name,
+    p.is_head DESC,
+    p.name;
